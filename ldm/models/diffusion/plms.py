@@ -233,4 +233,4 @@ class PLMSSampler(object):
 
         x_prev, pred_x0 = get_x_prev_and_pred_x0(e_t_prime, index)
 
-        return x_prev, pred_x0, e_t
+        return x_prev, pred_x0, e_4t

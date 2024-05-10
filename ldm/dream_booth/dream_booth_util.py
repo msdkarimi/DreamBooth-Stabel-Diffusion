@@ -4,7 +4,13 @@ import numpy as np
 from PIL import Image
 import cv2
 
-from ldm.util import instantiate_from_config
+import os, sys
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(parent_dir)
+
+
+from util import instantiate_from_config
 
 from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
 from transformers import AutoFeatureExtractor

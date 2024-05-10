@@ -266,7 +266,7 @@ def get_parser(**parser_kwargs):
 
 
 def main(db_parser=None):
-    assert db_parser is None, 'Hey dude! give me my so called white cane :('
+    assert db_parser is not None, 'Hey dude! give me my so called white cane :('
 
     seed_everything()
     opt = parser.parse_args()

@@ -13,9 +13,14 @@ import pytorch_lightning as pl
 from imwatermark import WatermarkEncoder
 from tqdm import tqdm, trange
 from contextlib import contextmanager, nullcontext
-from dream_booth_util import instantiate_from_config
-from ldm.dream_booth.plms import PLMSSampler
-from ldm.dream_booth.dream_booth_util import load_model_from_config, load_replacement, check_safety, put_watermark,
+
+
+import os, sys
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(parent_dir)
+
+from dream_booth.plms import PLMSSampler
+from dream_booth.dream_booth_util import load_model_from_config, load_replacement, check_safety, put_watermark
 
 
 

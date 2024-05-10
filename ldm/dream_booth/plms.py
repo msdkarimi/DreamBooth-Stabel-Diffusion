@@ -5,7 +5,11 @@ import numpy as np
 from tqdm import tqdm
 from functools import partial
 
-from ldm.modules.diffusionmodules.util import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like
+import os, sys
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(parent_dir)
+
+from modules.diffusionmodules.util import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like
 
 
 class PLMSSampler(object):
@@ -233,4 +237,4 @@ class PLMSSampler(object):
 
         x_prev, pred_x0 = get_x_prev_and_pred_x0(e_t_prime, index)
 
-        return x_prev, pred_x0, e_4t
+        return x_prev, pred_x0, e_t

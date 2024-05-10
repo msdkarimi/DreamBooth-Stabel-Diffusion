@@ -31,6 +31,20 @@ def get_parser(**parser_kwargs):
     )
 
     parser.add_argument(
+        "--n_rows",
+        type=int,
+        default=0,
+        help="rows in the grid (default: n_samples)",
+    )
+
+    parser.add_argument(
+        "--f",
+        type=int,
+        default=8,
+        help="downsampling factor",
+    )
+
+    parser.add_argument(
         "--skip_save",
         action='store_true',
         help="do not save individual samples. For speed measurements.",
@@ -99,6 +113,13 @@ def get_parser(**parser_kwargs):
         "--project",
         help="name of new or path to existing project"
     )
+
+    parser.add_argument(
+        "--plms",
+        action='store_true',
+        help="use plms sampling",
+    )
+
     parser.add_argument(
         "-d",
         "--debug",
@@ -283,7 +304,7 @@ def main(db_parser=None):
 
 
 
-    db_model = DreamBooth(config_prior=config_prior, config_fine_tune=config_fine_tune, opt=opt, device=device)
+    db_model = DreamBooth(prior_config=config_prior, ldm_config=config_fine_tune, opt=opt, device=device)
 
 
 

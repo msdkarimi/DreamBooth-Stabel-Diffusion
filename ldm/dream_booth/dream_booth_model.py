@@ -19,8 +19,8 @@ import os, sys
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(parent_dir)
 
-from dream_booth.plms import PLMSSampler
-from dream_booth.dream_booth_util import load_model_from_config, load_replacement, check_safety, put_watermark
+from plms import PLMSSampler
+from dream_booth_util import load_model_from_config, load_replacement, check_safety, put_watermark
 
 
 
@@ -31,29 +31,32 @@ def chunk(it, size):
 
 class DreamBooth(pl.LightningModule):
 
-    def __init__(self, *, prior_config: OmegaConf, ldm_config: OmegaConf, opt, device: str):
+    def __init__(self, *, prior_config: OmegaConf, ldm_config: OmegaConf, opt, device):
+        super().__init__()
 
-        self.prior_model = load_model_from_config(prior_config)
-
-        self.get_priors()
+        self.prior_model = load_model_from_config(prior_config, opt.ckpt)
+        self.opt = opt
+        self.get_priors(device)
         ## uncomment later.
         # self.init_ldm(ldm_config)
 
-        self.device = device
-        self.opt = opt
 
-    def get_priors(self):
+
+
+    def get_priors(self, device):
         # self.prior_model = load_model_from_config(prior_config).to(self.device)
-        model = self.prior_model.to(self.device)
+        model = self.prior_model.to(device)
 
         if self.opt.plms:
-            sampler = PLMSSampler(self.prior_model)
+            sampler = PLMSSampler(model)
         else:
             raise NotImplementedError("no other sampler is implemented for dreambooth so far!! :(")
 
         batch_size = self.opt.n_samples
         os.makedirs(self.opt.outdir, exist_ok=True)
-        outpath = self.opt.outdirbatch_size = self.opt.n_samples
+        outpath = self.opt.outdir
+
+        self.opt.outdirbatch_size = self.opt.n_samples
 
         wm = "StableDiffusionV1"
         wm_encoder = WatermarkEncoder()
@@ -78,7 +81,7 @@ class DreamBooth(pl.LightningModule):
         grid_count = len(os.listdir(outpath)) - 1
         start_code = None
         if self.opt.fixed_code:
-            start_code = torch.randn([self.opt.n_samples, self.opt.C, self.opt.H // self.opt.f, self.opt.W // self.opt.f], device=self.device)
+            start_code = torch.randn([self.opt.n_samples, self.opt.C, self.opt.H // self.opt.f, self.opt.W // self.opt.f], device=device)
 
         precision_scope = autocast if self.opt.precision == "autocast" else nullcontext
 

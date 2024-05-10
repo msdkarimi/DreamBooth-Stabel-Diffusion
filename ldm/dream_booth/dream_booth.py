@@ -192,19 +192,19 @@ def get_parser(**parser_kwargs):
     parser.add_argument(
         "--actual_resume",
         type=str,
-        required=True,
+        required=False,
         help="Path to model to actually resume from")
 
     parser.add_argument(
         "--data_root",
         type=str,
-        required=True,
+        required=False,
         help="Path to directory with training images")
 
     parser.add_argument(
         "--reg_data_root",
         type=str,
-        required=True,
+        required=False,
         help="Path to directory with regularization images")
 
     parser.add_argument(

@@ -30,7 +30,7 @@ class DreamBooth(pl.LightningModule):
 
         self.prior_model = load_model_from_config(prior_config)
 
-        self.prior = self.get_priors()
+        self.get_priors()
         ## uncomment later.
         # self.init_ldm(ldm_config)
 
@@ -82,43 +82,43 @@ class DreamBooth(pl.LightningModule):
                 with model.ema_scope():
                     tic = time.time()
                     all_samples = list()
-                    for n in trange(self.opt.n_iter, desc="Sampling"):
-                        for prompts in tqdm(data, desc="data"):
-                            uc = None
-                            if self.opt.scale != 1.0:
-                                uc = model.get_learned_conditioning(batch_size * [""])
-                            if isinstance(prompts, tuple):
-                                prompts = list(prompts)
-                            c = model.get_learned_conditioning(prompts)
-                            shape = [self.opt.C, self.opt.H // self.opt.f, self.opt.W // self.opt.f]
-                            samples_ddim, _ = sampler.sample(S=self.opt.ddim_steps,
-                                                             conditioning=c,
-                                                             batch_size=self.opt.n_samples,
-                                                             shape=shape,
-                                                             verbose=False,
-                                                             unconditional_guidance_scale=self.opt.scale,
-                                                             unconditional_conditioning=uc,
-                                                             eta=self.opt.ddim_eta,
-                                                             x_T=start_code)
+                    # for n in trange(self.opt.n_iter, desc="Sampling"):
+                    for prompts in tqdm(data, desc="data"):
+                        uc = None
+                        if self.opt.scale != 1.0:
+                            uc = model.get_learned_conditioning(batch_size * [""])
+                        if isinstance(prompts, tuple):
+                            prompts = list(prompts)
+                        c = model.get_learned_conditioning(prompts)
+                        shape = [self.opt.C, self.opt.H // self.opt.f, self.opt.W // self.opt.f]
+                        samples_ddim, _ = sampler.sample(S=self.opt.ddim_steps,
+                                                         conditioning=c,
+                                                         batch_size=self.opt.n_samples,
+                                                         shape=shape,
+                                                         verbose=False,
+                                                         unconditional_guidance_scale=self.opt.scale,
+                                                         unconditional_conditioning=uc,
+                                                         eta=self.opt.ddim_eta,
+                                                         x_T=start_code)
 
-                            x_samples_ddim = model.decode_first_stage(samples_ddim)
-                            x_samples_ddim = torch.clamp((x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0)
-                            x_samples_ddim = x_samples_ddim.cpu().permute(0, 2, 3, 1).numpy()
+                        x_samples_ddim = model.decode_first_stage(samples_ddim)
+                        x_samples_ddim = torch.clamp((x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0)
+                        x_samples_ddim = x_samples_ddim.cpu().permute(0, 2, 3, 1).numpy()
 
-                            x_checked_image, has_nsfw_concept = check_safety(x_samples_ddim)
+                        x_checked_image, has_nsfw_concept = check_safety(x_samples_ddim)
 
-                            x_checked_image_torch = torch.from_numpy(x_checked_image).permute(0, 3, 1, 2)
+                        x_checked_image_torch = torch.from_numpy(x_checked_image).permute(0, 3, 1, 2)
 
-                            if not self.opt.skip_save:
-                                for x_sample in x_checked_image_torch:
-                                    x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
-                                    img = Image.fromarray(x_sample.astype(np.uint8))
-                                    img = put_watermark(img, wm_encoder)
-                                    img.save(os.path.join(sample_path, f"{base_count:05}.png"))
-                                    base_count += 1
+                        if not self.opt.skip_save:
+                            for x_sample in x_checked_image_torch:
+                                x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
+                                img = Image.fromarray(x_sample.astype(np.uint8))
+                                img = put_watermark(img, wm_encoder)
+                                img.save(os.path.join(sample_path, f"{base_count:05}.png"))
+                                base_count += 1
 
-                            if not self.opt.skip_grid:
-                                all_samples.append(x_checked_image_torch)
+                        if not self.opt.skip_grid:
+                            all_samples.append(x_checked_image_torch)
 
                     if not self.opt.skip_grid:
                         # additionally, save as grid

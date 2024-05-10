@@ -3,8 +3,12 @@ import torch
 import argparse
 from pytorch_lightning import seed_everything
 from omegaconf import OmegaConf
-from ldm.dream_booth.dream_booth_util import load_model_from_config
-from ldm.dream_booth.dream_booth_model import DreamBooth
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(parent_dir)
+
+# from dream_booth_util import load_model_from_config
+from dream_booth_model import DreamBooth
 
 
 def get_parser(**parser_kwargs):

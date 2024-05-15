@@ -136,7 +136,7 @@ per_img_token_list = [
 
 class CustomDataset(Dataset):
     def __init__(self,
-                 data_root,
+                 data_root = "/content/data/pipe_data",
                  size=None,
                  repeats=100,
                  interpolation="bicubic",

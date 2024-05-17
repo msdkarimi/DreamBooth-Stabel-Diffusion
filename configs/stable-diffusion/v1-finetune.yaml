@@ -73,7 +73,7 @@ data:
         size: 512
         set: train
         per_image_tokens: false
-        repeats: 100
+        repeats: 1
 
 
 lightning:
@@ -91,3 +91,4 @@ lightning:
   trainer:
     benchmark: True
     max_steps: 6100
+    gpus: 0,

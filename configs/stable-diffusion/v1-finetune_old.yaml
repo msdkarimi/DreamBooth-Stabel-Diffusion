@@ -1,5 +1,5 @@
 model:
-  base_learning_rate: 0.5e-06
+  base_learning_rate: 5.0e-03
   target: ldm.models.diffusion.ddpm.LatentDiffusion
   params:
     linear_start: 0.00085
@@ -64,7 +64,7 @@ model:
 data:
   target: main.DataModuleFromConfig
   params:
-    batch_size: 1
+    batch_size: 2
     num_workers: 2
     wrap: false
     train:
@@ -75,10 +75,11 @@ data:
         per_image_tokens: false
         repeats: 1
 
+
 lightning:
   modelcheckpoint:
     params:
-      every_n_train_steps: 1
+      every_n_train_steps: 500
   callbacks:
     image_logger:
       target: main.ImageLogger
@@ -89,5 +90,5 @@ lightning:
 
   trainer:
     benchmark: True
-    max_steps: 800
+    max_steps: 6100
     gpus: 0,

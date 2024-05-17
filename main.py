@@ -4,6 +4,7 @@ import time
 import torch
 import torchvision
 import pytorch_lightning as pl
+import wandb
 
 from packaging import version
 from omegaconf import OmegaConf
@@ -443,6 +444,7 @@ class CUDACallback(Callback):
 
 if __name__ == "__main__":
 
+    wandb.loging('1c54a49c6cbfb12cd8b196375ba51a900a1774f4')
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
     # add cwd for convenience and to make classes in this file available when
@@ -546,7 +548,8 @@ if __name__ == "__main__":
                 }
             },
         }
-        default_logger_cfg = default_logger_cfgs["testtube"]
+        # default_logger_cfg = default_logger_cfgs["testtube"]
+        default_logger_cfg = default_logger_cfgs["wandb"]
         if "logger" in lightning_config:
             logger_cfg = lightning_config.logger
         else:
@@ -708,7 +711,7 @@ if __name__ == "__main__":
             try:
                 trainer.fit(model, data)
             except Exception:
-                melk()
+                # melk()
                 raise
         if not opt.no_test and not trainer.interrupted:
             trainer.test(model, data)

@@ -444,7 +444,7 @@ class CUDACallback(Callback):
 
 if __name__ == "__main__":
 
-    wandb.loging('1c54a49c6cbfb12cd8b196375ba51a900a1774f4')
+    wandb.login(key='1c54a49c6cbfb12cd8b196375ba51a900a1774f4')
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
     # add cwd for convenience and to make classes in this file available when

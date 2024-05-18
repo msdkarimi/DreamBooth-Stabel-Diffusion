@@ -874,7 +874,7 @@ class LatentDiffusion(DDPM):
         loss_train, loss_dict = self.shared_step(train_batch)
         loss_reg, _ = self.shared_step(reg_batch)
 
-        loss = loss_train + self.reg_weight * loss_reg
+        loss = loss_train + 0.98 * loss_reg
         # loss, loss_dict = self.shared_step(batch)
 
 

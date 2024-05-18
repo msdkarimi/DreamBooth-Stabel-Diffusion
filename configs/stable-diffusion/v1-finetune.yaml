@@ -85,14 +85,14 @@ data:
         per_image_tokens: false
         repeats: 1
 
-    validation:
-      target: ldm.data.custom_dataset.CustomDataset
-      params:
-        data_root: "/content/data/DARE/val/pipe_data"
-        size: 512
-        set: val
-        per_image_tokens: false
-        repeats: 1
+#    validation:
+#      target: ldm.data.custom_dataset.CustomDataset
+#      params:
+#        data_root: "/content/data/DARE/val"
+#        size: 512
+#        set: val
+#        per_image_tokens: false
+#        repeats: 1
 
 lightning:
   modelcheckpoint:

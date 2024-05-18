@@ -208,7 +208,12 @@ class DataModuleFromConfig(pl.LightningDataModule):
         self.use_worker_init_fn = use_worker_init_fn
         if train is not None:
             self.dataset_configs["train"] = train
-            self.train_dataloader = self._train_dataloader
+
+        if regularize is not None:
+            self.dataset_configs["regularize"] = train
+
+        self.train_dataloader = self._train_dataloader
+        
         if validation is not None:
             self.dataset_configs["validation"] = validation
             self.val_dataloader = partial(self._val_dataloader, shuffle=shuffle_val_dataloader)

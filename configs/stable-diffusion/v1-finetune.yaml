@@ -70,8 +70,27 @@ data:
     train:
       target: ldm.data.custom_dataset.CustomDataset
       params:
+        data_root: "/content/data/DARE/train/pipe_data"
         size: 512
         set: train
+        per_image_tokens: false
+        repeats: 1
+
+    regularize:
+      target: ldm.data.custom_dataset.CustomDataset
+      params:
+        data_root: "/content/data/DARE/train/pipe_data"
+        size: 512
+        set: train
+        per_image_tokens: false
+        repeats: 1
+
+    validation:
+      target: ldm.data.custom_dataset.CustomDataset
+      params:
+        data_root: "/content/data/DARE/val/pipe_data"
+        size: 512
+        set: val
         per_image_tokens: false
         repeats: 1
 
@@ -83,7 +102,7 @@ lightning:
     image_logger:
       target: main.ImageLogger
       params:
-        batch_frequency: 1 # Determines how often to log images
+        batch_frequency: 10 # Determines how often to log images, 1 menas after each batch it runs image_log call-back to generate new images
         max_images: 8 # Maximum number of images to log at each logging step.
         increase_log_steps: False
 

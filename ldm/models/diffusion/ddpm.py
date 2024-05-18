@@ -867,6 +867,29 @@ class LatentDiffusion(DDPM):
         loss = self(x, c)
         return loss
 
+    def training_step(self, batch, batch_idx):
+        train_batch = batch[0]
+        reg_batch = batch[1]
+
+        loss_train, loss_dict = self.shared_step(train_batch)
+        loss_reg, _ = self.shared_step(reg_batch)
+
+        loss = loss_train + self.reg_weight * loss_reg
+        # loss, loss_dict = self.shared_step(batch)
+
+
+        self.log_dict(loss_dict, prog_bar=True,
+                      logger=True, on_step=True, on_epoch=True)
+
+        self.log("global_step", self.global_step,
+                 prog_bar=True, logger=True, on_step=True, on_epoch=True)
+
+        if self.use_scheduler:
+            lr = self.optimizers().param_groups[0]['lr']
+            self.log('lr_abs', lr, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+
+        return loss
+
     def forward(self, x, c, *args, **kwargs):
         t = torch.randint(0, self.num_timesteps, (x.shape[0],), device=self.device).long()
         if self.model.conditioning_key is not None:

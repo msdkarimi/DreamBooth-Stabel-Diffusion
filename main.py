@@ -170,6 +170,17 @@ class WrappedDataset(Dataset):
         return self.data[idx]
 
 
+class ConcatDataset(Dataset):
+    def __init__(self, *args):
+        self.datasets = args
+
+    def __getitem__(self, idx):
+        return tuple(d[idx] for d in self.datasets)
+
+    def __len__(self):
+        return min(len(d) for d in self.datasets)
+
+
 def worker_init_fn(_):
     worker_info = torch.utils.data.get_worker_info()
 
@@ -187,7 +198,7 @@ def worker_init_fn(_):
 
 
 class DataModuleFromConfig(pl.LightningDataModule):
-    def __init__(self, batch_size, train=None, validation=None, test=None, predict=None,
+    def __init__(self, batch_size, train=None, regularize=None , validation=None, test=None, predict=None,
                  wrap=False, num_workers=None, shuffle_test_loader=False, use_worker_init_fn=False,
                  shuffle_val_dataloader=False):
         super().__init__()
@@ -227,7 +238,10 @@ class DataModuleFromConfig(pl.LightningDataModule):
             init_fn = worker_init_fn
         else:
             init_fn = None
-        return DataLoader(self.datasets["train"], batch_size=self.batch_size,
+        train = self.datasets["train"]
+        regularize = self.datasets["regularize"]
+        concat = ConcatDataset(train, regularize)
+        return DataLoader(concat, batch_size=self.batch_size,
                           num_workers=self.num_workers, shuffle=False if is_iterable_dataset else True,
                           worker_init_fn=init_fn)
 
@@ -585,6 +599,7 @@ if __name__ == "__main__":
         # add callback which sets up log directory
 
         # image_logger.clamp, If True, the images will be clamped to the range [-1, 1].
+        # "batch_frequency": 1, every step performs logging
         default_callbacks_cfg = {
             "setup_callback": {
                 "target": "main.SetupCallback",
@@ -601,7 +616,7 @@ if __name__ == "__main__":
             "image_logger": {
                 "target": "main.ImageLogger",
                 "params": {
-                    "batch_frequency": 1,
+                    "batch_frequency": 10,
                     "max_images": 4,
                     "clamp": True
                 }

@@ -444,7 +444,7 @@ class CUDACallback(Callback):
 
 if __name__ == "__main__":
 
-    wandb.login(key='1c54a49c6cbfb12cd8b196375ba51a900a1774f4')
+    # wandb.login(key='')
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
     # add cwd for convenience and to make classes in this file available when
@@ -548,8 +548,8 @@ if __name__ == "__main__":
                 }
             },
         }
-        # default_logger_cfg = default_logger_cfgs["testtube"]
-        default_logger_cfg = default_logger_cfgs["wandb"]
+        default_logger_cfg = default_logger_cfgs["testtube"]
+        # default_logger_cfg = default_logger_cfgs["wandb"]
         if "logger" in lightning_config:
             logger_cfg = lightning_config.logger
         else:
@@ -583,6 +583,8 @@ if __name__ == "__main__":
             trainer_kwargs["checkpoint_callback"] = instantiate_from_config(modelckpt_cfg)
 
         # add callback which sets up log directory
+
+        # image_logger.clamp, If True, the images will be clamped to the range [-1, 1].
         default_callbacks_cfg = {
             "setup_callback": {
                 "target": "main.SetupCallback",
@@ -599,7 +601,7 @@ if __name__ == "__main__":
             "image_logger": {
                 "target": "main.ImageLogger",
                 "params": {
-                    "batch_frequency": 750,
+                    "batch_frequency": 1,
                     "max_images": 4,
                     "clamp": True
                 }
@@ -634,7 +636,7 @@ if __name__ == "__main__":
                          "filename": "{epoch:06}-{step:09}",
                          "verbose": True,
                          'save_top_k': -1,
-                         'every_n_train_steps': 10000,
+                         'every_n_train_steps': 1,
                          'save_weights_only': True
                      }
                      }

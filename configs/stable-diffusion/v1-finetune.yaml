@@ -83,8 +83,8 @@ lightning:
     image_logger:
       target: main.ImageLogger
       params:
-        batch_frequency: 500
-        max_images: 8
+        batch_frequency: 1 # Determines how often to log images
+        max_images: 8 # Maximum number of images to log at each logging step.
         increase_log_steps: False
 
   trainer:

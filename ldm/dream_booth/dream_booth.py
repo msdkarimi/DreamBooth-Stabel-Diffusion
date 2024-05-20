@@ -133,7 +133,7 @@ def get_parser(**parser_kwargs):
         "-s",
         "--seed",
         type=int,
-        default=23,
+        default=1371,
         help="seed for seed_everything",
     )
     parser.add_argument(

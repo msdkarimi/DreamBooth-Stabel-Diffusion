@@ -34,9 +34,9 @@ class DreamBooth(pl.LightningModule):
     def __init__(self, *, prior_config: OmegaConf, ldm_config: OmegaConf, opt, device):
         super().__init__()
 
-        self.prior_model = load_model_from_config(prior_config, opt.ckpt)
+        self.prior_model = load_model_from_config(prior_config, opt.ckpt, prior=True)
         self.opt = opt
-        self.get_priors(device)
+        Zs_prior = self.get_priors(device)
         ## uncomment later.
         # self.init_ldm(ldm_config)
 
@@ -45,10 +45,10 @@ class DreamBooth(pl.LightningModule):
 
     def get_priors(self, device):
         # self.prior_model = load_model_from_config(prior_config).to(self.device)
-        model = self.prior_model.to(device)
+        self.prior_model = self.prior_model.to(device)
 
         if self.opt.plms:
-            sampler = PLMSSampler(model)
+            sampler = PLMSSampler(self.prior_model)
         else:
             raise NotImplementedError("no other sampler is implemented for dreambooth so far!! :(")
 
@@ -87,17 +87,17 @@ class DreamBooth(pl.LightningModule):
 
         with torch.no_grad():
             with precision_scope("cuda"):
-                with model.ema_scope():
+                with self.prior_model.ema_scope():
                     tic = time.time()
                     all_samples = list()
                     # for n in trange(self.opt.n_iter, desc="Sampling"):
                     for prompts in tqdm(data, desc="data"):
                         uc = None
                         if self.opt.scale != 1.0:
-                            uc = model.get_learned_conditioning(batch_size * [""])
+                            uc = self.prior_model.get_learned_conditioning(batch_size * [""])
                         if isinstance(prompts, tuple):
                             prompts = list(prompts)
-                        c = model.get_learned_conditioning(prompts)
+                        c = self.prior_model.get_learned_conditioning(prompts)
                         shape = [self.opt.C, self.opt.H // self.opt.f, self.opt.W // self.opt.f]
                         samples_ddim, _ = sampler.sample(S=self.opt.ddim_steps,
                                                          conditioning=c,
@@ -109,7 +109,7 @@ class DreamBooth(pl.LightningModule):
                                                          eta=self.opt.ddim_eta,
                                                          x_T=start_code)
 
-                        x_samples_ddim = model.decode_first_stage(samples_ddim)
+                        x_samples_ddim = self.prior_model.decode_first_stage(samples_ddim)
                         x_samples_ddim = torch.clamp((x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0)
                         x_samples_ddim = x_samples_ddim.cpu().permute(0, 2, 3, 1).numpy()
 
@@ -145,6 +145,11 @@ class DreamBooth(pl.LightningModule):
 
         print(f"Your samples are ready and waiting for you here: \n{outpath} \n"
               f" \nEnjoy.")
+
+
+        self.prior_model = self.prior_model.to('cpu')
+        torch.cuda.empty_cache()
+        # return samples_ddim
 
 
     def init_ldm(self, ldm_config):

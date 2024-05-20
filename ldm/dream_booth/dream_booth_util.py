@@ -52,7 +52,7 @@ def numpy_to_pil(images):
     return pil_images
 
 
-def load_model_from_config(config, ckpt, verbose=False):
+def load_model_from_config(config, ckpt, verbose=False, prior=False):
     print(f"Loading model from {ckpt}")
     pl_sd = torch.load(ckpt, map_location="cpu")
     if "global_step" in pl_sd:
@@ -68,7 +68,8 @@ def load_model_from_config(config, ckpt, verbose=False):
         print(u)
 
     model.cuda()
-    model.eval()
+    if prior:
+        model.eval()
     return model
 
 

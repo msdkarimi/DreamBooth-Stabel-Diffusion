@@ -109,47 +109,9 @@ class DreamBooth(pl.LightningModule):
                                                          eta=self.opt.ddim_eta,
                                                          x_T=start_code)
 
-                        x_samples_ddim = self.prior_model.decode_first_stage(samples_ddim)
-                        x_samples_ddim = torch.clamp((x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0)
-                        x_samples_ddim = x_samples_ddim.cpu().permute(0, 2, 3, 1).numpy()
-
-                        x_checked_image, has_nsfw_concept = check_safety(x_samples_ddim)
-
-                        x_checked_image_torch = torch.from_numpy(x_checked_image).permute(0, 3, 1, 2)
-
-                        if not self.opt.skip_save:
-                            for x_sample in x_checked_image_torch:
-                                x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
-                                img = Image.fromarray(x_sample.astype(np.uint8))
-                                img = put_watermark(img, wm_encoder)
-                                img.save(os.path.join(sample_path, f"{base_count:05}.png"))
-                                base_count += 1
-
-                        if not self.opt.skip_grid:
-                            all_samples.append(x_checked_image_torch)
-
-                    if not self.opt.skip_grid:
-                        # additionally, save as grid
-                        grid = torch.stack(all_samples, 0)
-                        grid = rearrange(grid, 'n b c h w -> (n b) c h w')
-                        grid = make_grid(grid, nrow=n_rows)
-
-                        # to image
-                        grid = 255. * rearrange(grid, 'c h w -> h w c').cpu().numpy()
-                        img = Image.fromarray(grid.astype(np.uint8))
-                        img = put_watermark(img, wm_encoder)
-                        img.save(os.path.join(outpath, f'grid-{grid_count:04}.png'))
-                        grid_count += 1
-
-                    toc = time.time()
-
-        print(f"Your samples are ready and waiting for you here: \n{outpath} \n"
-              f" \nEnjoy.")
-
-
         self.prior_model = self.prior_model.to('cpu')
         torch.cuda.empty_cache()
-        # return samples_ddim
+        return samples_ddim
 
 
     def init_ldm(self, ldm_config):

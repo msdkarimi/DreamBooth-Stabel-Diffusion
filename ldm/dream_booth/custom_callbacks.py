@@ -1,60 +1,32 @@
-import os
+from pytorch_lightning.callbacks import Callback
+from dream_booth_util import load_model_from_config
 import torch
-from itertools import islice
-import torch.nn as nn
-import numpy as np
-import time
-from PIL import Image
+from tqdm import tqdm
 from torch import autocast
-from einops import rearrange
-from torchvision.utils import make_grid
-from omegaconf import OmegaConf
-import pytorch_lightning as pl
+import os
+import time
 from imwatermark import WatermarkEncoder
-from tqdm import tqdm, trange
 from contextlib import contextmanager, nullcontext
-
-
-import os, sys
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(parent_dir)
-
+from itertools import islice
 from plms import PLMSSampler
-from dream_booth_util import load_model_from_config, load_replacement, check_safety, put_watermark
 
 
-
-def chunk(it, size):
-    it = iter(it)
-    return iter(lambda: tuple(islice(it, size)), ())
-
-
-class DreamBooth(pl.LightningModule):
-
-    def __init__(self, *, prior_config: OmegaConf, ldm_config: OmegaConf, opt, device):
-        super().__init__()
-
-        self.opt = opt
-
-        self.__init_prior(prior_config, opt)
-        self.__init_ldm(ldm_config)
-
-
-        Zs_prior = self.get_priors(device)
-        ## uncomment later.
-        # self.init_ldm(ldm_config)
-
-
-
-    def __init_prior(self, prior_config, opt):
+class PriorPreservation(Callback):
+    def __init__(self, *, prior_config, opt):
         self.prior_model = load_model_from_config(prior_config, opt.ckpt, prior=True)
+        print("just to check if instance has been created")
 
-    def __init_ldm(self, ldm_config):
-        self.ldm_model = load_model_from_config(ldm_config)
+    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
+        z = self.get_priors()
+        pl_module.prior_z = z
 
+    @staticmethod
+    def chunk(it, size):
+        it = iter(it)
+        return iter(lambda: tuple(islice(it, size)), ())
 
-    def get_priors(self, device):
-
+    def get_priors(self):
+        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.prior_model = self.prior_model.to(device)
 
         if self.opt.plms:
@@ -83,7 +55,7 @@ class DreamBooth(pl.LightningModule):
             print(f"reading prompts from {self.opt.from_file}")
             with open(self.opt.from_file, "r") as f:
                 data = f.read().splitlines()
-                data = list(chunk(data, batch_size))
+                data = list(self.chunk(data, batch_size))
 
         sample_path = os.path.join(outpath, "samples")
         os.makedirs(sample_path, exist_ok=True)
@@ -121,13 +93,4 @@ class DreamBooth(pl.LightningModule):
 
         self.prior_model = self.prior_model.to('cpu')
         torch.cuda.empty_cache()
-        return samples_ddim
-
-
-
-
-
-    def prior_z(self, input_text:str, negative_prompt:str = ""):
-        pass
-
-
+        return samples_ddim.detach()

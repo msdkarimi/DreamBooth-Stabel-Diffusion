@@ -255,7 +255,7 @@ def get_parser(**parser_kwargs):
     parser.add_argument(
         "--config_fine_tune",
         type=str,
-        default="configs/latent-diffusion/txt2img-fine-tuning.yaml",
+        default="configs/stable-diffusion/v1-finetune.yaml",
         help="path to config which constructs model",
     )
 

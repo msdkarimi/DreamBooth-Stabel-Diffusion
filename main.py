@@ -147,6 +147,51 @@ def get_parser(**parser_kwargs):
         default=True,
         help="scale base-lr by ngpu * batch_size * n_accumulate",
     )
+
+    parser.add_argument(
+        "--prompt",
+        type=str,
+        nargs="?",
+        default="a painting of a virus monster playing guitar",
+        help="the prompt to render"
+    )
+
+    parser.add_argument(
+        "--scale",
+        type=float,
+        default=7.5,
+        help="unconditional guidance scale: eps = eps(x, empty) + scale * (eps(x, cond) - eps(x, empty))",
+    )
+    parser.add_argument(
+        "--n_samples",
+        type=int,
+        default=1,
+        help="how many samples to produce for each given prompt. A.k.a. batch size",
+    )
+    parser.add_argument(
+        "--from-file",
+        type=str,
+        help="if specified, load prompts from this file",
+    )
+    parser.add_argument(
+        "--config_prior",
+        type=str,
+        default="configs/stable-diffusion/v1-inference.yaml",
+        help="path to config which constructs model for prior knowledge",
+    )
+    parser.add_argument(
+        "--config_fine_tune",
+        type=str,
+        default="configs/stable-diffusion/v1-finetune.yaml",
+        help="path to config which constructs model",
+    )
+    parser.add_argument(
+        "--ddim_steps",
+        type=int,
+        default=50,
+        help="number of ddim sampling steps",
+    )
+
     return parser
 
 
@@ -670,7 +715,10 @@ if __name__ == "__main__":
         elif 'ignore_keys_callback' in callbacks_cfg:
             del callbacks_cfg['ignore_keys_callback']
 
-        trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
+        # to pass the prior config to the callback
+        config_prior = OmegaConf.load(f"{opt.config_prior}")
+        trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k], config_prior=config_prior, opt_args=opt)
+                                       for k in callbacks_cfg]
 
         trainer = Trainer.from_argparse_args(trainer_opt, **trainer_kwargs)
         trainer.logdir = logdir  ###

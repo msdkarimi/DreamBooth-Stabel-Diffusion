@@ -678,7 +678,17 @@ if __name__ == "__main__":
                     "clamp": True
                 }
             },
-            "learning_rate_logger": {
+
+            "prior_preservation": {
+                "target": "ldm.dream_booth.custom_callbacks.PriorPreservation",
+                "params": {
+                    "batch_frequency": 1,  # Determines how often to perform callback, 1 menas after each batch it runs image_log call-back to generate new images
+                    "prior_config": "configs/stable-diffusion/v1-inference.yaml",
+                    "opt": opt,
+                    }
+            },
+
+                      "learning_rate_logger": {
                 "target": "main.LearningRateMonitor",
                 "params": {
                     "logging_interval": "step",
@@ -722,8 +732,8 @@ if __name__ == "__main__":
             del callbacks_cfg['ignore_keys_callback']
 
         # to pass the prior config to the callback
-        config_prior = OmegaConf.load(f"{opt.config_prior}")
-        trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k], config_prior=config_prior, opt_args=opt)
+        # config_prior = OmegaConf.load(f"{opt.config_prior}")
+        trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k])
                                        for k in callbacks_cfg]
 
         trainer = Trainer.from_argparse_args(trainer_opt, **trainer_kwargs)

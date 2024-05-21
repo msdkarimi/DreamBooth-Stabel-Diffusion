@@ -1,5 +1,5 @@
 from pytorch_lightning.callbacks import Callback
-from dream_booth_util import load_model_from_config
+from ldm.dream_booth.dream_booth_util import load_model_from_config
 import torch
 from tqdm import tqdm
 from torch import autocast
@@ -8,12 +8,16 @@ import time
 from imwatermark import WatermarkEncoder
 from contextlib import contextmanager, nullcontext
 from itertools import islice
-from plms import PLMSSampler
+from ldm.dream_booth.plms import PLMSSampler
+from omegaconf import OmegaConf
 
 
 class PriorPreservation(Callback):
-    def __init__(self, *, prior_config, opt):
-        self.prior_model = load_model_from_config(prior_config, opt.ckpt, prior=True)
+    def __init__(self, batch_frequency, prior_config):
+
+        self.prior_config = OmegaConf.load(prior_config)
+        # self.prior_model = load_model_from_config(prior_config, opt.ckpt, prior=True)
+        self.batch_freq = batch_frequency
         print("just to check if instance has been created")
 
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):

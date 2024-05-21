@@ -652,61 +652,57 @@ class LatentDiffusion(DDPM):
 
     @torch.no_grad()
     def get_input(self, batch, k, return_first_stage_outputs=False, force_c_encode=False,
-                  cond_key=None, return_original_cond=False, bs=None, prior=False):
-        if not prior:
-            x = super().get_input(batch, k)
-            if bs is not None:
-                x = x[:bs]
-            x = x.to(self.device)
-            encoder_posterior = self.encode_first_stage(x)
-            z = self.get_first_stage_encoding(encoder_posterior).detach()
+                  cond_key=None, return_original_cond=False, bs=None):
 
-            if self.model.conditioning_key is not None:
-                if cond_key is None:
-                    cond_key = self.cond_stage_key
-                if cond_key != self.first_stage_key:
-                    if cond_key in ['caption', 'coordinates_bbox']:
-                        xc = batch[cond_key]
-                    elif cond_key == 'class_label':
-                        xc = batch
-                    else:
-                        xc = super().get_input(batch, cond_key).to(self.device)
+        x = super().get_input(batch, k)
+        if bs is not None:
+            x = x[:bs]
+        x = x.to(self.device)
+        encoder_posterior = self.encode_first_stage(x)
+        z = self.get_first_stage_encoding(encoder_posterior).detach()
+
+        if self.model.conditioning_key is not None:
+            if cond_key is None:
+                cond_key = self.cond_stage_key
+            if cond_key != self.first_stage_key:
+                if cond_key in ['caption', 'coordinates_bbox']:
+                    xc = batch[cond_key]
+                elif cond_key == 'class_label':
+                    xc = batch
                 else:
-                    xc = x
-                if not self.cond_stage_trainable or force_c_encode:
-                    if isinstance(xc, dict) or isinstance(xc, list):
-                        # import pudb; pudb.set_trace()
-                        c = self.get_learned_conditioning(xc)
-                    else:
-                        c = self.get_learned_conditioning(xc.to(self.device))
-                else:
-                    c = xc
-                if bs is not None:
-                    c = c[:bs]
-
-                if self.use_positional_encodings:
-                    pos_x, pos_y = self.compute_latent_shifts(batch)
-                    ckey = __conditioning_keys__[self.model.conditioning_key]
-                    c = {ckey: c, 'pos_x': pos_x, 'pos_y': pos_y}
-
+                    xc = super().get_input(batch, cond_key).to(self.device)
             else:
-                c = None
-                xc = None
-                if self.use_positional_encodings:
-                    pos_x, pos_y = self.compute_latent_shifts(batch)
-                    c = {'pos_x': pos_x, 'pos_y': pos_y}
-            out = [z, c]
-            if return_first_stage_outputs:
-                xrec = self.decode_first_stage(z)
-                out.extend([x, xrec])
-            if return_original_cond:
-                out.append(xc)
-            return out
-        elif prior:
-            pass
+                xc = x
+            if not self.cond_stage_trainable or force_c_encode:
+                if isinstance(xc, dict) or isinstance(xc, list):
+                    # import pudb; pudb.set_trace()
+                    c = self.get_learned_conditioning(xc)
+                else:
+                    c = self.get_learned_conditioning(xc.to(self.device))
+            else:
+                c = xc
+            if bs is not None:
+                c = c[:bs]
+
+            if self.use_positional_encodings:
+                pos_x, pos_y = self.compute_latent_shifts(batch)
+                ckey = __conditioning_keys__[self.model.conditioning_key]
+                c = {ckey: c, 'pos_x': pos_x, 'pos_y': pos_y}
 
         else:
-            raise ValueError
+            c = None
+            xc = None
+            if self.use_positional_encodings:
+                pos_x, pos_y = self.compute_latent_shifts(batch)
+                c = {'pos_x': pos_x, 'pos_y': pos_y}
+        out = [z, c]
+        if return_first_stage_outputs:
+            xrec = self.decode_first_stage(z)
+            out.extend([x, xrec])
+        if return_original_cond:
+            out.append(xc)
+        return out
+
 
 
     @torch.no_grad()
@@ -875,18 +871,11 @@ class LatentDiffusion(DDPM):
         return loss
 
     def training_step(self, batch, batch_idx):
-        # train_batch = batch[0]
-        # reg_batch = batch[1]
-        #
-        # loss_train, loss_dict = self.shared_step(train_batch)
-        # loss_reg, _ = self.shared_step(reg_batch)
-        # loss = loss_train + 0.98 * loss_reg
-
-
         loss, loss_dict = self.shared_step(batch)
+        # TODO import prior priomt from dataloader,
+        loss_prior, loss_dict_prior = self(self.prior_z, ['photo of a pipe'])
 
-        # self.prior_z
-
+        loss = loss + 0.89 * loss_prior
 
         self.log_dict(loss_dict, prog_bar=True,
                       logger=True, on_step=True, on_epoch=True)

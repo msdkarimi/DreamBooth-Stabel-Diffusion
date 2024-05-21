@@ -159,7 +159,7 @@ def get_parser(**parser_kwargs):
     parser.add_argument(
         "--scale",
         type=float,
-        default=7.5,
+        default=9.5,
         help="unconditional guidance scale: eps = eps(x, empty) + scale * (eps(x, cond) - eps(x, empty))",
     )
     parser.add_argument(
@@ -188,7 +188,7 @@ def get_parser(**parser_kwargs):
     parser.add_argument(
         "--ddim_steps",
         type=int,
-        default=50,
+        default=100,
         help="number of ddim sampling steps",
     )
     parser.add_argument(

@@ -80,7 +80,7 @@ class PriorPreservation(Callback):
                     for prompts in tqdm(data, desc="data"):
                         uc = None
                         if self.opt.scale != 1.0:
-                            uc = self.prior_model.get_learned_conditioning(batch_size * [""])
+                            uc = self.prior_model.get_learned_conditioning(batch_size * ["low quality"])
                         if isinstance(prompts, tuple):
                             prompts = list(prompts)
                         c = self.prior_model.get_learned_conditioning(prompts)

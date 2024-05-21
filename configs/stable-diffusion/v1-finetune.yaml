@@ -106,11 +106,11 @@ lightning:
         max_images: 8 # Maximum number of images to log at each logging step.
         increase_log_steps: False
 
-    prior_preservation:
-      target: ldm.dream_booth.custom_callbacks.PriorPreservation
-      params:
-        batch_frequency: 1 # Determines how often to perform callback, 1 menas after each batch it runs image_log call-back to generate new images
-        prior_config: "configs/stable-diffusion/v1-inference.yaml"
+#    prior_preservation:
+#      target: ldm.dream_booth.custom_callbacks.PriorPreservation
+#      params:
+#        batch_frequency: 1 # Determines how often to perform callback, 1 menas after each batch it runs image_log call-back to generate new images
+#        prior_config: "configs/stable-diffusion/v1-inference.yaml"
 
 
   trainer:

@@ -295,9 +295,9 @@ class DataModuleFromConfig(pl.LightningDataModule):
         else:
             init_fn = None
         train = self.datasets["train"]
-        regularize = self.datasets["regularize"]
-        concat = ConcatDataset(train, regularize)
-        return DataLoader(concat, batch_size=self.batch_size,
+        # regularize = self.datasets["regularize"]
+        # concat = ConcatDataset(train, regularize)
+        return DataLoader(train, batch_size=self.batch_size,
                           num_workers=self.num_workers, shuffle=False if is_iterable_dataset else True,
                           worker_init_fn=init_fn)
 

@@ -20,7 +20,7 @@ class PriorPreservation(Callback):
         self.batch_freq = batch_frequency
         print("just to check if instance has been created")
 
-    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
+    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataset_idx):
         z = self.get_priors()
         pl_module.prior_z = z
 

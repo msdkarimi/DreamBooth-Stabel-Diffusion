@@ -191,6 +191,12 @@ def get_parser(**parser_kwargs):
         default=50,
         help="number of ddim sampling steps",
     )
+    parser.add_argument(
+        "--ckpt",
+        type=str,
+        default="models/ldm/stable-diffusion-v1/model.ckpt",
+        help="path to checkpoint of model",
+    )
 
     return parser
 

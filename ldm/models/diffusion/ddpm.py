@@ -873,7 +873,8 @@ class LatentDiffusion(DDPM):
     def training_step(self, batch, batch_idx):
         loss, loss_dict = self.shared_step(batch)
         # TODO import prior priomt from dataloader,
-        loss_prior, loss_dict_prior = self(self.prior_z, ['photo of a pipe'])
+        prior_caption = batch["caption_prior"]
+        loss_prior, loss_dict_prior = self(self.prior_z, prior_caption)
 
         loss = loss + 0.89 * loss_prior
 

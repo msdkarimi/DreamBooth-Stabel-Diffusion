@@ -14,6 +14,9 @@ from omegaconf import OmegaConf
 
 
 # ---------------
+from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
+from transformers import AutoFeatureExtractor
+
 from einops import rearrange
 from PIL import Image
 import numpy as np

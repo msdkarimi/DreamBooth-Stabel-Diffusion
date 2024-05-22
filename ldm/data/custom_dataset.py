@@ -8,11 +8,15 @@ from torchvision import transforms
 import random
 
 training_templates_smallest = [
-    'photo of a sks {}',
+    'photo of a sks {} on wall',
+    'image showing sks {} on wall damage by wet',
+    'photo showing water-damaged caused wall sks {}'
 ]
 
 reg_templates_smallest = [
-    'photo of a {}',
+    'photo of a {} on wall',
+    'image showing {} on wall damage by wet',
+    'photo showing water-damaged caused wall {}',
 ]
 
 
@@ -29,7 +33,7 @@ class CustomDataset(Dataset):
                  interpolation="bicubic",
                  flip_p=0.5,
                  set="train",
-                 placeholder_token="pipe",
+                 placeholder_token=None,
                  per_image_tokens=False,
                  center_crop=False,
                  mixing_prob=0.25,
@@ -37,6 +41,7 @@ class CustomDataset(Dataset):
                  reg=False
                  ):
         assert data_root is not None, 'data_root is not specified.'
+        assert placeholder_token is not None, 'class name should be specified'
         self.data_root = data_root
 
         self.image_paths = [os.path.join(self.data_root, file_path) for file_path in os.listdir(self.data_root)]
@@ -89,6 +94,7 @@ class CustomDataset(Dataset):
             text = random.choice(reg_templates_smallest).format(placeholder_string)
 
         example["caption"] = text
+        example["caption_prior"] = random.choice(reg_templates_smallest).format(placeholder_string)
 
         # default to score-sde preprocessing
         img = np.array(image).astype(np.uint8)

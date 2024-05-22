@@ -1156,7 +1156,7 @@ class LatentDiffusion(DDPM):
         if start_T is not None:
             timesteps = min(timesteps, start_T)
         iterator = tqdm(reversed(range(0, timesteps)), desc='Progressive Generation',
-                        total=timesteps) if verbose else reversed(
+                        total=timesteps, disable=True) if verbose else reversed(
             range(0, timesteps))
         if type(temperature) == float:
             temperature = [temperature] * timesteps

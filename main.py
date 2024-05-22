@@ -157,6 +157,14 @@ def get_parser(**parser_kwargs):
     )
 
     parser.add_argument(
+        "--neg_prompt",
+        type=str,
+        nargs="?",
+        default="low quality, unrealistic, deformed",
+        help="the prompt for unconditioned conditioning"
+    )
+
+    parser.add_argument(
         "--scale",
         type=float,
         default=9.5,

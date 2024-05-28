@@ -13,7 +13,8 @@ import time
 from pytorch_lightning import seed_everything
 from torch import autocast
 from contextlib import contextmanager, nullcontext
-
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(parent_dir)
 from ldm.util import instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
@@ -157,7 +158,7 @@ def main():
     parser.add_argument(
         "--n_iter",
         type=int,
-        default=2,
+        default=1,
         help="sample this often",
     )
     parser.add_argument(
@@ -187,7 +188,7 @@ def main():
     parser.add_argument(
         "--n_samples",
         type=int,
-        default=3,
+        default=1,
         help="how many samples to produce for each given prompt. A.k.a. batch size",
     )
     parser.add_argument(

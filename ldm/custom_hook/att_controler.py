@@ -30,7 +30,7 @@ class AttentionController(object):
     def set_attn_data(self, data, cls_tkn_pos, heads, attn_type=None):
         assert attn_type in ["self", "cross"], "the attention type must be specified!"
 
-        data = self.up_sample(data, heads, cls_tkn_pos)
+        data = self.up_sample(data, heads, cls_tkn_pos, attn_type)
 
         self.layer_counter(attn_type)
 
@@ -48,29 +48,39 @@ class AttentionController(object):
             else:
                 self._layers_cross += 1
 
-
-
-    def up_sample(self, data, heads, cls_tkn_pos: int):
-        result = self.pre_prosses(data, heads, cls_tkn_pos+1)
-        return F.interpolate(result, size=(Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value), mode='bilinear', align_corners=False)
-
+    def up_sample(self, data, heads, cls_tkn_pos: int, attn_type):
+        result = self.pre_processes(data, heads, cls_tkn_pos + 1, attn_type)
+        return F.interpolate(result,
+                             size=(Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value),
+                             mode='bilinear', align_corners=False).squeeze(0).squeeze(0)
 
     def aggregate(self):
-        L = len(self._cross_attn)
+
+        L_CROSS = len(self._cross_attn)
+        L_SELF = len(self._self_attn)
+
         T = self._T
 
-        intermediate_tensor = torch.empty((Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value),
-                                          dtype=self._cross_attn[0][0].dtype, device=self._cross_attn[0][0].device)
-        maps = torch.zeros_like(intermediate_tensor)
-        for _, times in self._cross_attn:
-            maps += torch.stack(times).sum(dim=0)
+        maps_cross = torch.zeros_like(self._cross_attn[1][0])
+        maps_self = torch.zeros_like(self._self_attn[1][0])
 
-        return maps
+        for _, times in self._cross_attn.items():
+            maps_cross += torch.stack(times).sum(dim=0)
 
-    def pre_prosses(self, data, heads, cls_tkn_pos):
+        for _, times in self._self_attn.items():
+            maps_self += torch.stack(times).sum(dim=0)
+
+        return maps_cross / (T * L_CROSS), maps_self / (T * L_SELF)
+
+    def pre_processes(self, data, heads, cls_tkn_pos, attn_type):
+
         if not isinstance(cls_tkn_pos, list):
             result = data.view(-1, heads, data.shape[-2], data.shape[-1]).transpose(2, 3)[1, :, cls_tkn_pos, :].mean(dim=0)
-            return result.view(Constants.TARGET_CROSS_RESOLUTION.value, Constants.TARGET_CROSS_RESOLUTION)
+            if attn_type == "cross":
+                return result.view(Constants.TARGET_CROSS_RESOLUTION.value, Constants.TARGET_CROSS_RESOLUTION.value).unsqueeze(0).unsqueeze(0)
+            else:
+                return result.view(Constants.TARGET_SELF_RESOLUTION.value, Constants.TARGET_SELF_RESOLUTION.value).unsqueeze(0).unsqueeze(0)
+
         else:
             raise NotImplementedError
 
@@ -79,7 +89,6 @@ class AttentionController(object):
 
         self._layers_self = 0
         self._layers_cross = 0
-
 
     def increment_temp_T(self):
         self._temp_T += 1

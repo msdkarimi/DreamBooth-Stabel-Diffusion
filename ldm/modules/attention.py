@@ -187,7 +187,10 @@ class CrossAttention(nn.Module):
 
         # attention, what we cannot get enough of
         attn = sim.softmax(dim=-1)
-        if attn.shape[-2] == 256 and attn.shape[-2] != attn.shape[-11]:
+        if attn.shape[-2] == 256 and attn.shape[-2] != attn.shape[-1]:
+            attn_c.set_attn_data(attn, 0, h, 'cross')
+
+        if attn.shape[-2] == 1024 and attn.shape[-2] == attn.shape[-1]:
             attn_c.set_attn_data(attn, 0, h, 'self')
 
         out = einsum('b i j, b j d -> b i d', attn, v)

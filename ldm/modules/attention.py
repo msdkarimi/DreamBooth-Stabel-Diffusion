@@ -187,8 +187,8 @@ class CrossAttention(nn.Module):
 
         # attention, what we cannot get enough of
         attn = sim.softmax(dim=-1)
-
-        print(f'<-<-<-<-<-{attn_c}')
+        if attn.shape[-2] == 256 and attn.shape[-2] != attn.shape[-11]:
+            attn_c.set_attn_data(attn, 0, h, 'self')
 
         out = einsum('b i j, b j d -> b i d', attn, v)
         out = rearrange(out, '(b h) n d -> b n (h d)', h=h)
@@ -207,12 +207,12 @@ class BasicTransformerBlock(nn.Module):
         self.norm3 = nn.LayerNorm(dim)
         self.checkpoint = checkpoint
 
-    def forward(self, x, context=None):
-        return checkpoint(self._forward, (x, context), self.parameters(), self.checkpoint)
+    def forward(self, x, context=None, **kwargs):
+        return checkpoint(self._forward, (x, context, kwargs["attn_c"]), self.parameters(), self.checkpoint)
 
-    def _forward(self, x, context=None):
-        x = self.attn1(self.norm1(x)) + x
-        x = self.attn2(self.norm2(x), context=context) + x
+    def _forward(self, x, context=None, attn_c=None):
+        x = self.attn1(self.norm1(x), attn_c=attn_c) + x
+        x = self.attn2(self.norm2(x), context=context, attn_c=attn_c) + x
         x = self.ff(self.norm3(x)) + x
         return x
 

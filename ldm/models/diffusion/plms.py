@@ -144,6 +144,9 @@ class PLMSSampler(object):
         old_eps = []
 
         for i, step in enumerate(iterator):
+
+            attn_c.increment_temp_T()
+
             index = total_steps - i - 1
             ts = torch.full((b,), step, device=device, dtype=torch.long)
             ts_next = torch.full((b,), time_range[min(i + 1, len(time_range) - 1)], device=device, dtype=torch.long)
@@ -160,6 +163,10 @@ class PLMSSampler(object):
                                       unconditional_guidance_scale=unconditional_guidance_scale,
                                       unconditional_conditioning=unconditional_conditioning,
                                       old_eps=old_eps, t_next=ts_next, attn_c=attn_c)
+
+            attn_c.increment_T()
+
+
             img, pred_x0, e_t = outs
             old_eps.append(e_t)
             if len(old_eps) >= 4:

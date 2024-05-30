@@ -66,11 +66,11 @@ class AttentionController(object):
         final = F.interpolate(f, size=(Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value),
                               mode='bilinear', align_corners=False).squeeze(0).view(1, -1).transpose(0, 1)
 
-
+        final = final.transpose(0, 1).view(-1, 512, 512)
 
         _max, _arg_max = torch.max(final, dim=-1)
-        _max = _max.view(Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value).numpy()
-        _arg_max = _arg_max.view(Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value).numpy()
+        _max = _max.view(Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value).cpu().numpy()
+        _arg_max = _arg_max.view(Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value).cpu().numpy()
 
         mask_bg = _max <= Constants.ALPHA.value
         mask_u = (_max > Constants.ALPHA.value) & (_max < Constants.BETA.value)

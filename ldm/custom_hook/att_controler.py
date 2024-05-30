@@ -11,6 +11,10 @@ class Constants(Enum):
     TARGET_CROSS_RESOLUTION = 16
     TARGET_SELF_RESOLUTION = 32
 
+    ALPHA = 0.5
+    BETA = 0.6
+    THAU = 4
+
 
 class AttentionController(object):
 
@@ -30,7 +34,8 @@ class AttentionController(object):
     def set_attn_data(self, data, cls_tkn_pos, heads, attn_type=None):
         assert attn_type in ["self", "cross"], "the attention type must be specified!"
 
-        data = self.up_sample(data, heads, cls_tkn_pos, attn_type)
+        if attn_type == "cross":
+            data = self.up_sample(data, heads, cls_tkn_pos, attn_type)
 
         self.layer_counter(attn_type)
 
@@ -49,10 +54,31 @@ class AttentionController(object):
                 self._layers_cross += 1
 
     def up_sample(self, data, heads, cls_tkn_pos: int, attn_type):
-        result = self.pre_processes(data, heads, cls_tkn_pos + 1, attn_type)
-        return F.interpolate(result,
-                             size=(Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value),
-                             mode='bilinear', align_corners=False).squeeze(0).squeeze(0)
+        return self.pre_processes(data, heads, cls_tkn_pos + 1, attn_type)
+        # res =  F.interpolate(result,
+        #                      size=(Constants.TARGET_SELF_RESOLUTION.value, Constants.TARGET_SELF_RESOLUTION.value),
+        #                      mode='bilinear', align_corners=False).squeeze(0).squeeze(0)
+
+    def post_process(self, cross_attn, self_attn):
+
+        final = self_attn**Constants.THAU.value @ cross_attn
+        f = final.transpose(0, 1).view(-1, 32, 32).unsqueeze(0)
+        final = F.interpolate(f, size=(Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value), mode='bilinear', align_corners=False).squeeze(0)
+
+        _max, _arg_max = torch.max(final, dim=-1)
+        _max = _max.view(Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value).numpy()
+        _arg_max = _arg_max.view(Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value).numpy()
+
+        mask_bg = _max <= Constants.ALPHA.value
+        mask_u = (_max > Constants.ALPHA.value) & (_max < Constants.BETA.value)
+        otherwise = ~(mask_bg | mask_u)
+
+        _max[mask_bg] = 0
+        _max[mask_u] = 255
+        
+        _max[otherwise] = _arg_max[otherwise]
+
+        return _max
 
     def aggregate(self):
 
@@ -70,14 +96,20 @@ class AttentionController(object):
         for _, times in self._self_attn.items():
             maps_self += torch.stack(times).sum(dim=0)
 
-        return maps_cross / (T * L_CROSS), maps_self / (T * L_SELF)
+
+        return self.post_process(maps_cross / (T * L_CROSS), maps_self / (T * L_SELF))
+
+
 
     def pre_processes(self, data, heads, cls_tkn_pos, attn_type):
 
         if not isinstance(cls_tkn_pos, list):
-            result = data.view(-1, heads, data.shape[-2], data.shape[-1]).transpose(2, 3)[1, :, cls_tkn_pos, :].mean(dim=0)
+            result = data.view(-1, heads, data.shape[-2], data.shape[-1]).transpose(2, 3)[1, :, cls_tkn_pos:cls_tkn_pos+1, :].mean(dim=0).transpose(0, 1).view(1, 16, 16).unsqueeze(0)
             if attn_type == "cross":
-                return result.view(Constants.TARGET_CROSS_RESOLUTION.value, Constants.TARGET_CROSS_RESOLUTION.value).unsqueeze(0).unsqueeze(0)
+
+                return F.interpolate(result, size=(32, 32), mode='bilinear', align_corners=False).squeeze(0).view(1, -1).transpose(0, 1)
+
+                # return result.view(Constants.TARGET_CROSS_RESOLUTION.value, Constants.TARGET_CROSS_RESOLUTION.value).unsqueeze(0).unsqueeze(0)
             else:
                 return result.view(Constants.TARGET_SELF_RESOLUTION.value, Constants.TARGET_SELF_RESOLUTION.value).unsqueeze(0).unsqueeze(0)
 

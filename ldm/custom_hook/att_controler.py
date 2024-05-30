@@ -34,8 +34,8 @@ class AttentionController(object):
     def set_attn_data(self, data, cls_tkn_pos, heads, attn_type=None):
         assert attn_type in ["self", "cross"], "the attention type must be specified!"
 
-        if attn_type == "cross":
-            data = self.up_sample(data, heads, cls_tkn_pos, attn_type)
+        # if attn_type == "cross":
+        data = self.up_sample(data, heads, cls_tkn_pos, attn_type)
 
         self.layer_counter(attn_type)
 
@@ -61,9 +61,12 @@ class AttentionController(object):
 
     def post_process(self, cross_attn, self_attn):
 
-        final = self_attn**Constants.THAU.value @ cross_attn
+        final = (self_attn.transpose(0, 1) ** Constants.THAU.value) @ cross_attn
         f = final.transpose(0, 1).view(-1, 32, 32).unsqueeze(0)
-        final = F.interpolate(f, size=(Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value), mode='bilinear', align_corners=False).squeeze(0)
+        final = F.interpolate(f, size=(Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value),
+                              mode='bilinear', align_corners=False).squeeze(0).view(1, -1).transpose(0, 1)
+
+
 
         _max, _arg_max = torch.max(final, dim=-1)
         _max = _max.view(Constants.IMAGE_RESOLUTION.value, Constants.IMAGE_RESOLUTION.value).numpy()
@@ -96,25 +99,26 @@ class AttentionController(object):
         for _, times in self._self_attn.items():
             maps_self += torch.stack(times).sum(dim=0)
 
-
         return self.post_process(maps_cross / (T * L_CROSS), maps_self / (T * L_SELF))
 
-
-
     def pre_processes(self, data, heads, cls_tkn_pos, attn_type):
+        if attn_type == "cross":
+            if not isinstance(cls_tkn_pos, list):
+                result = data.view(-1, heads, data.shape[-2], data.shape[-1]).transpose(2, 3)[1, :,
+                         cls_tkn_pos:cls_tkn_pos + 1, :].mean(dim=0).transpose(0, 1).view(1, 16, 16).unsqueeze(0)
+                if attn_type == "cross":
 
-        if not isinstance(cls_tkn_pos, list):
-            result = data.view(-1, heads, data.shape[-2], data.shape[-1]).transpose(2, 3)[1, :, cls_tkn_pos:cls_tkn_pos+1, :].mean(dim=0).transpose(0, 1).view(1, 16, 16).unsqueeze(0)
-            if attn_type == "cross":
+                    return F.interpolate(result, size=(32, 32), mode='bilinear', align_corners=False).squeeze(0).view(1, -1).transpose(0, 1)
 
-                return F.interpolate(result, size=(32, 32), mode='bilinear', align_corners=False).squeeze(0).view(1, -1).transpose(0, 1)
+                    # return result.view(Constants.TARGET_CROSS_RESOLUTION.value, Constants.TARGET_CROSS_RESOLUTION.value).unsqueeze(0).unsqueeze(0)
+                else:
+                    return result.view(Constants.TARGET_SELF_RESOLUTION.value,
+                                       Constants.TARGET_SELF_RESOLUTION.value).unsqueeze(0).unsqueeze(0)
 
-                # return result.view(Constants.TARGET_CROSS_RESOLUTION.value, Constants.TARGET_CROSS_RESOLUTION.value).unsqueeze(0).unsqueeze(0)
             else:
-                return result.view(Constants.TARGET_SELF_RESOLUTION.value, Constants.TARGET_SELF_RESOLUTION.value).unsqueeze(0).unsqueeze(0)
-
+                raise NotImplementedError
         else:
-            raise NotImplementedError
+            return data.view(-1, heads, data.shape[-2], data.shape[-1])[1, :, :, :].mean(dim=0)
 
     def increment_T(self):
         self._T += 1

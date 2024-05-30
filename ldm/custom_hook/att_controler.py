@@ -75,7 +75,7 @@ class AttentionController(object):
 
         _max[mask_bg] = 0
         _max[mask_u] = 255
-        
+
         _max[otherwise] = _arg_max[otherwise]
 
         return _max

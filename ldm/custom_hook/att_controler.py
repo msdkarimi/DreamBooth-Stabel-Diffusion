@@ -33,10 +33,10 @@ class AttentionController(object):
 
             if spatial_dim == dim:
                 self.layer_counter("self")
-                self._self_attn[resolution][self._layers_self].append(attension)
+                self._self_attn[resolution].append(attension)
             else:
                 self.layer_counter("cross")
-                self._cross_attn[resolution][self._layers_cross].append(attension)
+                self._cross_attn[resolution].append(attension)
 
 
 

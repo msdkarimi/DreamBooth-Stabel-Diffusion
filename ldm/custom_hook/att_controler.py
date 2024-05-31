@@ -52,12 +52,12 @@ class AttentionController(object):
 
     def aggregate(self):
         for resolution, weights in self._self_attn.items():
-            if resolution != 8:
-                self._self_attn[resolution] = torch.stack(weights).sum(dim=0) / len(weights)
+            # if resolution != 8:
+            self._self_attn[resolution] = torch.stack(weights).sum(dim=0) / len(weights)
 
         for resolution, weights in self._cross_attn.items():
-            if resolution != 8:
-                self._cross_attn[resolution] = torch.stack(weights).sum(dim=0) / len(weights)
+            # if resolution != 8:
+            self._cross_attn[resolution] = torch.stack(weights).sum(dim=0) / len(weights)
 
         self.segment()
 
@@ -65,13 +65,15 @@ class AttentionController(object):
         M_list = []
         for i in range(len(self._self_attn[64])):
             # Step 1: Attention Aggregation
-            weights = self.aggregate_weights(weight_ratio=weight_ratio)
+            weights = self.aggregate_weights(i, weight_ratio=weight_ratio)
             # Step 2 & 3: Iterative Merging & NMS
             M_final = self.generate_masks(weights)
             M_list.append(M_final)
         return np.array(M_list)
 
     def mask_merge(self, iter, attns, kl_threshold, grid=None):
+        device = torch.device('cpu')
+        attns = torch.Tensor(attns, device=device)
         if iter == 0:
             # The first iteration of merging
             anchors = attns[grid[:, 0], grid[:, 1], :, :]  # 256 x 64 x 64
@@ -88,6 +90,9 @@ class AttentionController(object):
             kl_bin = torch.cat(kl_bin, dim=0).to(torch.float64) # 256 x 4096
 
             attns_reshaped = attns.view(-1, 4096)
+
+            kl_bin = kl_bin.to(torch.float64)
+            attns_reshaped = attns_reshaped.to(torch.float64)
 
             # Perform matrix multiplication
             matmul_result = torch.matmul(kl_bin, attns_reshaped)
@@ -116,6 +121,7 @@ class AttentionController(object):
                     for idx in matched_idx: matched.add(idx)
                     aggregated_attn = attns[kl_bin].mean(0)
                     new_attns.append(aggregated_attn.reshape(1, 64, 64))
+            new_attns = torch.cat(new_attns, dim=0)
         return np.array(new_attns)
 
     def generate_masks(self, attns):
@@ -124,7 +130,8 @@ class AttentionController(object):
                 attns_merged = self.mask_merge(i, attns, self.kl_threshold, grid=self.grid)
             else:
                 attns_merged = self.mask_merge(i, attns_merged, self.kl_threshold)
-        attns_merged = attns_merged[:, 0, :, :]
+        # attns_merged = attns_merged[:, 0, :, :]
+        # attns_merged = attns_merged[:, 0, :, :]
 
         # Kmeans refinement (optional for better visual consistency)
         if self.refine:
@@ -154,18 +161,22 @@ class AttentionController(object):
         return M_final
 
     def KL(self, x, Y):
+        x = x.to(torch.float32)
+        Y = Y.to(torch.float32)
         quotient = torch.log(x) - torch.log(Y)
         kl_1 = torch.sum(x * quotient, dim=(-2, -1)) / 2
         kl_2 = -torch.sum(Y * quotient, dim=(-2, -1)) / 2
         return kl_1 + kl_2
 
-    def aggregate_weights(self, weight_ratio=None):
+    def aggregate_weights(self, i, weight_ratio=None):
             if weight_ratio is None:
                 weight_ratio = self.get_weight_rato()
-            aggre_weights = np.zeros((64, 64, 64, 64))
+
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            aggre_weights = torch.zeros((64, 64, 64, 64), device=device)
 
             for index, (resolution, weights) in enumerate(self._self_attn.items()):
-                weights = weights[0]
+                weights = weights[i]
                 size = int(np.sqrt(weights.shape[-1]))
                 ratio = int(64 / size)
                 # Average over the multi-head channel
@@ -184,13 +195,14 @@ class AttentionController(object):
 
                 # Aggrgate accroding to weight_ratio
                 aggre_weights += weights * weight_ratio[index]
-            return aggre_weights.numpy().astype(np.double)
+            return aggre_weights.to(torch.float64).cpu().numpy()
+            # return aggre_weights.numpy().astype(np.double)
 
     def get_weight_rato(self, ):
         # This function assigns proportional aggergation weight
         sizes = []
         for resolution, weights in self._self_attn.items():
-            sizes.append(np.sqrt(weights.shape[-2]))
+            sizes.append(np.sqrt(weights[0].shape[-2]))
         denom = np.sum(sizes)
         return sizes / denom
 

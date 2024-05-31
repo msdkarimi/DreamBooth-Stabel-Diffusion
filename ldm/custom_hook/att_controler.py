@@ -8,20 +8,12 @@ class Constants(Enum):
     IMAGE_RESOLUTION = 512
     MAX_ATTEN_RESOLUTION = 64
 
-    TARGET_CROSS_RESOLUTION = 16
-    TARGET_SELF_RESOLUTION = 32
-
-    ALPHA = 0.5
-    BETA = 0.6
-    THAU = 4
-
-
 class AttentionController(object):
 
     def __init__(self):
 
-        self._self_attn = defaultdict(list)
-        self._cross_attn = defaultdict(list)
+        self._self_attn = {64: defaultdict(list), 32: defaultdict(list), 16: defaultdict(list), 8: defaultdict(list)}
+        self._cross_attn = {64: defaultdict(list), 32: defaultdict(list), 16: defaultdict(list), 8: defaultdict(list)}
 
         self._T = 0
         self._temp_T = 0
@@ -31,11 +23,27 @@ class AttentionController(object):
 
         super().__init__()
 
-    def set_attn_data(self, data, cls_tkn_pos, heads, position=None):
+    def set_attn_data(self, attension, cls_tkn_pos, heads, position=None):
         assert position in ["down", "up", "middel"], "the attention type must be specified!"
 
+        uc_c, spatial_dim, dim = attension.shape
 
-        print(position)
+        resolution = spatial_dim ** 0.5
+
+        if spatial_dim == dim:
+            self.layer_counter("self")
+            self._self_attn[resolution][self._layers_self].append(attension)
+        else:
+            self.layer_counter("cross")
+            self._cross_attn[resolution][self._layers_cross].append(attension)
+
+
+
+
+
+
+
+        # print(position)
         # # if attn_type == "cross":
         # data = self.up_sample(data, heads, cls_tkn_pos, attn_type)
         #
@@ -104,21 +112,23 @@ class AttentionController(object):
 
     def aggregate(self):
 
-        L_CROSS = len(self._cross_attn)
-        L_SELF = len(self._self_attn)
+        print(len(self._self_attn[64]))
 
-        T = self._T
-
-        maps_cross = torch.zeros_like(self._cross_attn[1][0])
-        maps_self = torch.zeros_like(self._self_attn[1][0])
-
-        for _, times in self._cross_attn.items():
-            maps_cross += torch.stack(times).sum(dim=0)
-
-        for _, times in self._self_attn.items():
-            maps_self += torch.stack(times).sum(dim=0)
-
-        return self.post_process(maps_cross / (T * L_CROSS), maps_self / (T * L_SELF))
+        # L_CROSS = len(self._cross_attn)
+        # L_SELF = len(self._self_attn)
+        #
+        # T = self._T
+        #
+        # maps_cross = torch.zeros_like(self._cross_attn[1][0])
+        # maps_self = torch.zeros_like(self._self_attn[1][0])
+        #
+        # for _, times in self._cross_attn.items():
+        #     maps_cross += torch.stack(times).sum(dim=0)
+        #
+        # for _, times in self._self_attn.items():
+        #     maps_self += torch.stack(times).sum(dim=0)
+        #
+        # return self.post_process(maps_cross / (T * L_CROSS), maps_self / (T * L_SELF))
 
     def pre_processes(self, data, heads, cls_tkn_pos, attn_type):
         if attn_type == "cross":

@@ -12,8 +12,8 @@ class AttentionController(object):
 
     def __init__(self):
 
-        self._self_attn = {64: defaultdict(list), 32: defaultdict(list), 16: defaultdict(list), 8: defaultdict(list)}
-        self._cross_attn = {64: defaultdict(list), 32: defaultdict(list), 16: defaultdict(list), 8: defaultdict(list)}
+        self._self_attn = {64: [], 32: [], 16: [], 8: []}
+        self._cross_attn = {64: [], 32: [], 16: [], 8: []}
 
         self._T = 0
         self._temp_T = 0
@@ -26,16 +26,17 @@ class AttentionController(object):
     def set_attn_data(self, attension, cls_tkn_pos, heads, position=None):
         assert position in ["down", "up", "middel"], "the attention type must be specified!"
 
-        uc_c, spatial_dim, dim = attension.shape
+        if self._temp_T == 5:
+            uc_c, spatial_dim, dim = attension.shape
 
-        resolution = spatial_dim ** 0.5
+            resolution = spatial_dim ** 0.5
 
-        if spatial_dim == dim:
-            self.layer_counter("self")
-            self._self_attn[resolution][self._layers_self].append(attension)
-        else:
-            self.layer_counter("cross")
-            self._cross_attn[resolution][self._layers_cross].append(attension)
+            if spatial_dim == dim:
+                self.layer_counter("self")
+                self._self_attn[resolution][self._layers_self].append(attension)
+            else:
+                self.layer_counter("cross")
+                self._cross_attn[resolution][self._layers_cross].append(attension)
 
 
 

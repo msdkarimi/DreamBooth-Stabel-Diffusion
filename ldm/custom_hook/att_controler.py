@@ -48,7 +48,7 @@ class AttentionController(object):
             if spatial_dim == dim:
                 self._self_attn[resolution].append(attension.view(-1, heads, spatial_dim, spatial_dim))
             else:
-                self._cross_attn[resolution].append(attension.view(-1, heads, spatial_dim, spatial_dim))
+                self._cross_attn[resolution].append(attension.view(-1, heads, spatial_dim, dim))
 
     def aggregate(self):
         for resolution, weights in self._self_attn.items():

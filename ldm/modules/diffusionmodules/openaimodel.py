@@ -77,12 +77,12 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     support it as an extra input.
     """
 
-    def forward(self, x, emb, context=None, **kwargs):
+    def forward(self, x, emb, context=None, position=None, **kwargs):
         for layer in self:
             if isinstance(layer, TimestepBlock):
                 x = layer(x, emb)
             elif isinstance(layer, SpatialTransformer):
-                x = layer(x, context, **kwargs)
+                x = layer(x, context, position, **kwargs)
             else:
                 x = layer(x)
         return x
@@ -727,14 +727,20 @@ class UNetModel(nn.Module):
             assert y.shape == (x.shape[0],)
             emb = emb + self.label_emb(y)
 
+        position = None
+
         h = x.type(self.dtype)
         for module in self.input_blocks:
-            h = module(h, emb, context, **kwargs)
+            position = "down"
+            h = module(h, emb, context, position, **kwargs)
             hs.append(h)
-        h = self.middle_block(h, emb, context, **kwargs)
+
+        position = "middel"
+        h = self.middle_block(h, emb, context, position, **kwargs)
         for module in self.output_blocks:
+            position = "up"
             h = th.cat([h, hs.pop()], dim=1)
-            h = module(h, emb, context, **kwargs)
+            h = module(h, emb, context, position, **kwargs)
         h = h.type(x.dtype)
         if self.predict_codebook_ids:
             return self.id_predictor(h)

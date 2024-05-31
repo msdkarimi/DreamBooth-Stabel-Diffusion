@@ -31,18 +31,20 @@ class AttentionController(object):
 
         super().__init__()
 
-    def set_attn_data(self, data, cls_tkn_pos, heads, attn_type=None):
-        assert attn_type in ["self", "cross"], "the attention type must be specified!"
+    def set_attn_data(self, data, cls_tkn_pos, heads, position=None):
+        assert position in ["down", "up", "middel"], "the attention type must be specified!"
 
-        # if attn_type == "cross":
-        data = self.up_sample(data, heads, cls_tkn_pos, attn_type)
 
-        self.layer_counter(attn_type)
-
-        if attn_type == 'self':
-            self._self_attn[self._layers_self].append(data)
-        else:
-            self._cross_attn[self._layers_cross].append(data)
+        print(position)
+        # # if attn_type == "cross":
+        # data = self.up_sample(data, heads, cls_tkn_pos, attn_type)
+        #
+        # self.layer_counter(attn_type)
+        #
+        # if attn_type == 'self':
+        #     self._self_attn[self._layers_self].append(data)
+        # else:
+        #     self._cross_attn[self._layers_cross].append(data)
 
     def layer_counter(self, attn_type=None):
         assert attn_type in ["self", "cross"], "the attention type must be specified!"

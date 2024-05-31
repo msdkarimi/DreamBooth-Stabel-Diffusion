@@ -167,7 +167,7 @@ class CrossAttention(nn.Module):
             nn.Dropout(dropout)
         )
 
-    def forward(self, x, context=None, mask=None, attn_c=None):
+    def forward(self, x, context=None, mask=None, position=None, attn_c=None):
         h = self.heads
 
         q = self.to_q(x)
@@ -187,11 +187,11 @@ class CrossAttention(nn.Module):
 
         # attention, what we cannot get enough of
         attn = sim.softmax(dim=-1)
-        if attn.shape[-2] == 256 and attn.shape[-2] != attn.shape[-1]:
-            attn_c.set_attn_data(attn, 0, h, 'cross')
+        # if attn.shape[-2] == 256 and attn.shape[-2] != attn.shape[-1]:
+        attn_c.set_attn_data(attn, 0, h, position)
 
-        if attn.shape[-2] == 1024 and attn.shape[-2] == attn.shape[-1]:
-            attn_c.set_attn_data(attn, 0, h, 'self')
+        # if attn.shape[-2] == 1024 and attn.shape[-2] == attn.shape[-1]:
+        attn_c.set_attn_data(attn, 0, h, position)
 
         out = einsum('b i j, b j d -> b i d', attn, v)
         out = rearrange(out, '(b h) n d -> b n (h d)', h=h)
@@ -210,12 +210,12 @@ class BasicTransformerBlock(nn.Module):
         self.norm3 = nn.LayerNorm(dim)
         self.checkpoint = checkpoint
 
-    def forward(self, x, context=None, **kwargs):
-        return checkpoint(self._forward, (x, context, kwargs["attn_c"]), self.parameters(), self.checkpoint)
+    def forward(self, x, context=None, position=None, **kwargs):
+        return checkpoint(self._forward, (x, context, position, kwargs["attn_c"]), self.parameters(), self.checkpoint)
 
-    def _forward(self, x, context=None, attn_c=None):
-        x = self.attn1(self.norm1(x), attn_c=attn_c) + x
-        x = self.attn2(self.norm2(x), context=context, attn_c=attn_c) + x
+    def _forward(self, x, context=None, position=None, attn_c=None):
+        x = self.attn1(self.norm1(x), position=position, attn_c=attn_c) + x
+        x = self.attn2(self.norm2(x), context=context, position=position, attn_c=attn_c) + x
         x = self.ff(self.norm3(x)) + x
         return x
 
@@ -252,7 +252,7 @@ class SpatialTransformer(nn.Module):
                                               stride=1,
                                               padding=0))
 
-    def forward(self, x, context=None, **kwargs):
+    def forward(self, x, context=None, position=None, **kwargs):
         # note: if no context is given, cross-attention defaults to self-attention
         b, c, h, w = x.shape
         x_in = x
@@ -260,7 +260,7 @@ class SpatialTransformer(nn.Module):
         x = self.proj_in(x)
         x = rearrange(x, 'b c h w -> b (h w) c')
         for block in self.transformer_blocks:
-            x = block(x, context=context, **kwargs)
+            x = block(x, context=context, position=position, **kwargs)
         x = rearrange(x, 'b (h w) c -> b c h w', h=h, w=w)
         x = self.proj_out(x)
         return x + x_in

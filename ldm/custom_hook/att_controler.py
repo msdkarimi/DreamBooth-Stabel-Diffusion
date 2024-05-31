@@ -81,6 +81,23 @@ class AttentionController(object):
 
         _max[otherwise] = _arg_max[otherwise]
 
+
+
+        # # final = final.transpose(0, 1).view(-1, 512, 512)
+        # final = final.view(512, 512, -1)[:, :, 0]
+        #
+        # final = (final - final.min()) / (final.max() - final.min())
+        #
+        # # _max, _arg_max = torch.max(final, dim=-1)
+        #
+        # mask_bg = final <= Constants.ALPHA.value
+        # mask_u = (final > Constants.ALPHA.value) & (final < Constants.BETA.value)
+        # other = ~( mask_bg| mask_u)
+        #
+        # final[mask_bg] = 0
+        # final[mask_u] = 0
+        # final[other] = 255
+
         return _max
 
     def aggregate(self):

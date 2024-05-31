@@ -191,7 +191,7 @@ class CrossAttention(nn.Module):
         attn_c.set_attn_data(attn, 0, h, position)
 
         # if attn.shape[-2] == 1024 and attn.shape[-2] == attn.shape[-1]:
-        attn_c.set_attn_data(attn, 0, h, position)
+        # attn_c.set_attn_data(attn, 0, h, position)
 
         out = einsum('b i j, b j d -> b i d', attn, v)
         out = rearrange(out, '(b h) n d -> b n (h d)', h=h)

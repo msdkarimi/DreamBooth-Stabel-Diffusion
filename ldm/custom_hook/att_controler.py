@@ -62,13 +62,18 @@ class AttentionController(object):
 
             resolution = spatial_dim ** 0.5
 
+            if (resolution == 64) and (spatial_dim != dim):
+                result = attension.view(-1, heads, attension.shape[-2], attension.shape[-1]).transpose(2, 3)[1, :,
+                         cls_tkn_pos + 1:cls_tkn_pos + 2, :].mean(dim=0).view(-1,
+                                                                              CONSTANTS.TARGET_CROSS_RESOLUTION.value,
+                                                                              CONSTANTS.TARGET_CROSS_RESOLUTION.value)
+                self._cross_attn[self._layers_cross].append(result)
+
             if spatial_dim == dim:
                 self._self_attn[resolution].append(attension.view(-1, heads, spatial_dim, spatial_dim))
             else:
+                pass
                 # self._cross_attn[resolution].append(attension.view(-1, heads, spatial_dim, dim))
-                if resolution == 64:
-                    result = attension.view(-1, heads, attension.shape[-2], attension.shape[-1]).transpose(2, 3)[1, :, cls_tkn_pos+1:cls_tkn_pos+2, :].mean(dim=0).view(1, CONSTANTS.TARGET_CROSS_RESOLUTION.value, CONSTANTS.TARGET_CROSS_RESOLUTION.value)
-                    self._cross_attn[self._layers_cross].append(result)
 
     def aggregate_cross_attention(self, weight_ratio=[1.0, 1.0, 1.0, 1.0]):
 

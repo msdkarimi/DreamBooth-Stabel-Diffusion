@@ -56,9 +56,9 @@ class AttentionController(object):
     def aggregate_cross_attention(self, weight_ratio=[1.0, 1.0, 1.0, 1.0]):
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        aggregated_weights = torch.zeros(CONSTANTS.IMAGE_RESOLUTION.value,
+        aggregated_weights = torch.zeros((CONSTANTS.IMAGE_RESOLUTION.value,
                                          CONSTANTS.IMAGE_RESOLUTION.value,
-                                         CONSTANTS.TEXT_MAX_LEN.value, device=device)
+                                         CONSTANTS.TEXT_MAX_LEN.value), device=device)
 
         if weight_ratio is None:
             weight_ratio = self.get_weight_ratio()
@@ -68,6 +68,7 @@ class AttentionController(object):
             h, spatial, dim = _map.shape
             size = int(spatial ** 0.5)
             scale_factor = int(CONSTANTS.IMAGE_RESOLUTION.value/size)
+
             _map = _map.mean(0).permute(0, 1)
             _map = _map.view(dim, size, size).unsqueeze(0)
             _map = F.interpolate(_map, scale_factor=scale_factor, mode='bilinear', align_corners=False).squeeze(0)

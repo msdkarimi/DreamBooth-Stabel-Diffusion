@@ -10,6 +10,7 @@ class CONSTANTS(Enum):
     IMAGE_RESOLUTION = 512
     MAX_ATTEN_RESOLUTION = 64
     TEXT_MAX_LEN = 77
+    TARGET_CROSS_RESOLUTION = 64
 
 
 class AttentionController(object):
@@ -17,7 +18,8 @@ class AttentionController(object):
     def __init__(self, total_steps, num_points=16, refine=True):
 
         self._self_attn = {64: [], 32: [], 16: [], 8: []}
-        self._cross_attn = {64: [], 32: [], 16: [], 8: []}
+        # self._cross_attn = {64: [], 32: [], 16: [], 8: []}
+        self._cross_attn = defaultdict(list)
 
         self._T = 0
         self._temp_T = 0
@@ -29,6 +31,18 @@ class AttentionController(object):
         # Inialize other parameters
         self.kl_threshold = np.array([0.9] * 3)
         self.refine = refine
+
+        self._layers_self = 0
+        self._layers_cross = 0
+
+    def layer_counter(self, attn_type=None):
+        assert attn_type in ["self", "cross"], "the attention type must be specified!"
+
+        if self._T != self._temp_T:
+            if attn_type == 'self':
+                self._layers_self += 1
+            else:
+                self._layers_cross += 1
 
     def generate_sampling_grid(self, num_of_points):
         segment_len = 63 // (num_of_points - 1)
@@ -51,7 +65,10 @@ class AttentionController(object):
             if spatial_dim == dim:
                 self._self_attn[resolution].append(attension.view(-1, heads, spatial_dim, spatial_dim))
             else:
-                self._cross_attn[resolution].append(attension.view(-1, heads, spatial_dim, dim))
+                # self._cross_attn[resolution].append(attension.view(-1, heads, spatial_dim, dim))
+                if resolution == 64:
+                    result = attension.view(-1, heads, attension.shape[-2], attension.shape[-1]).transpose(2, 3)[1, :, cls_tkn_pos+1:cls_tkn_pos+2, :].mean(dim=0).view(1, CONSTANTS.TARGET_CROSS_RESOLUTION.value, CONSTANTS.TARGET_CROSS_RESOLUTION.value)
+                    self._cross_attn[self._layers_cross].append(result)
 
     def aggregate_cross_attention(self, weight_ratio=[1.0, 1.0, 1.0, 1.0]):
 
@@ -85,17 +102,31 @@ class AttentionController(object):
         for resolution, weights in self._self_attn.items():
             self._self_attn[resolution] = torch.stack(weights).sum(dim=0) / len(weights)
 
-        for resolution, weights in self._cross_attn.items():
-            self._cross_attn[resolution] = torch.stack(weights).sum(dim=0) / len(weights)
+        # for resolution, weights in self._cross_attn.items():
+        #     self._cross_attn[resolution] = torch.stack(weights).sum(dim=0) / len(weights)
+
+    def cross_process(self):
+        L_CROSS = len(self._cross_attn)
+        T = self._T
+        maps_cross = torch.zeros_like(self._cross_attn[1][0])
+        for _, times in self._cross_attn.items():
+            maps_cross += torch.stack(times).sum(dim=0)
+        maps_cross = maps_cross / (T * L_CROSS)
+        maps_cross = maps_cross.unsqueeze(0)
+        return F.interpolate(maps_cross,
+                      size=(CONSTANTS.IMAGE_RESOLUTION.value, CONSTANTS.IMAGE_RESOLUTION.value),
+                      mode='bilinear', align_corners=False).squeeze(0)
 
     def semantic_diffSeg(self):
+
 
         # aggregate self-attention/cross-attention maps in different layers
         self.preprocess_attention_maps()
 
         segments = self.segment()[0]
 
-        cross = self.aggregate_cross_attention()
+        # cross = self.aggregate_cross_attention()
+        cross = self.cross_process().permute(1, 2, 0)
 
         return segments, cross
 

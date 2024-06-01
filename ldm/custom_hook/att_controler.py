@@ -62,8 +62,8 @@ class AttentionController(object):
         if attn_typ == "cross":
             result = data.view(-1, heads, data.shape[-2], data.shape[-1]).transpose(2, 3)[1, :,
                      cls_tkn_pos + 1:cls_tkn_pos + 2, :].mean(dim=0).view(-1, CONSTANTS.TARGET_CROSS_RESOLUTION.value, CONSTANTS.TARGET_CROSS_RESOLUTION.value).unsqueeze(0)
-            result = result.view(CONSTANTS.TARGET_SELF_RESOLUTION.value,
-                               CONSTANTS.TARGET_SELF_RESOLUTION.value).squeeze(0).view(-1, CONSTANTS.TARGET_SELF_RESOLUTION.value ** 2).transpose(0, 1)
+
+            result = F.interpolate(result, size=(CONSTANTS.TARGET_SELF_RESOLUTION.value, CONSTANTS.TARGET_SELF_RESOLUTION.value), mode='bilinear', align_corners=False).squeeze(0).view(-1, CONSTANTS.TARGET_SELF_RESOLUTION.value ** 2).transpose(0, 1)
         else:
             result = data.view(-1, heads, data.shape[-2], data.shape[-1])[1, :, :, :].mean(dim=0)
             # result = result.view(CONSTANTS.TARGET_SELF_RESOLUTION.value,

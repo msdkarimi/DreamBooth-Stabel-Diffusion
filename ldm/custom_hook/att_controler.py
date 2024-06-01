@@ -40,7 +40,7 @@ class AttentionController(object):
     def set_attn_data(self, attension, cls_tkn_pos, heads, position=None):
         assert position in ["down", "up", "middel"], "the attention type must be specified!"
 
-        if self._temp_T == 100:
+        if self._temp_T == 5:
             uc_c, spatial_dim, dim = attension.shape
 
             resolution = spatial_dim ** 0.5
@@ -59,7 +59,7 @@ class AttentionController(object):
             # if resolution != 8:
             self._cross_attn[resolution] = torch.stack(weights).sum(dim=0) / len(weights)
 
-        self.segment()
+        return self.segment()
 
     def segment(self, weight_ratio=None):
         M_list = []
@@ -145,9 +145,11 @@ class AttentionController(object):
             attns_merged = np.array(attns_merged)
 
         # Upsampling
-        attns_expanded = torch.unsqueeze(attns_merged, dim=-1)
+        # attns_expanded = torch.unsqueeze(attns_merged, dim=-1)
 
-        self.upsampled = F.interpolate(attns_expanded, scale_factor=8, mode='bilinear', align_corners=False).squeeze(-1)
+        attns_expanded = torch.from_numpy(attns_merged).unsqueeze(0)
+
+        self.upsampled = F.interpolate(attns_expanded, scale_factor=8, mode='bilinear', align_corners=False).squeeze(0)
 
 
 

@@ -252,7 +252,7 @@ def main():
     if opt.dpm_solver:
         sampler = DPMSolverSampler(model)
     elif opt.plms:
-        sampler = PLMSSampler(model)
+        sampler = PLMSSampler(model, total_steps=opt.ddim_steps)
     else:
         sampler = DDIMSampler(model)
 

@@ -10,13 +10,13 @@ from ldm.modules.diffusionmodules.util import make_ddim_sampling_parameters, mak
 
 
 class PLMSSampler(object):
-    def __init__(self, model, schedule="linear", **kwargs):
+    def __init__(self, model, total_steps, schedule="linear", **kwargs):
         super().__init__()
         self.model = model
         self.ddpm_num_timesteps = model.num_timesteps
         self.schedule = schedule
 
-        self.attn_controller = AttentionController()
+        self.attn_controller = AttentionController(total_steps=total_steps)
 
     def register_buffer(self, name, attr):
         if type(attr) == torch.Tensor:
@@ -178,7 +178,7 @@ class PLMSSampler(object):
                 intermediates['x_inter'].append(img)
                 intermediates['pred_x0'].append(pred_x0)
 
-        cross_map = attn_c.aggregate()
+        cross_map = attn_c.semantic_diffSeg()
 
         torch.save(cross_map, '/content/masks/cross_map.pth')
         # torch.save(self_map, '/content/masks/self_map.pth')

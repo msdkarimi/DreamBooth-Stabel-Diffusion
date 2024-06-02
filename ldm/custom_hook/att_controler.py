@@ -95,10 +95,10 @@ class AttentionController(object):
 
         segments = self.segment()[0]
 
-        # cross = self.aggregate_cross_attention()
-        cross = 0
+        cross = self.aggregate_cross_attention()
+        # cross = 0
 
-        return segments, cross
+        return segments, cross, self.upsampled
 
     def segment(self, weight_ratio=None):
         M_list = []

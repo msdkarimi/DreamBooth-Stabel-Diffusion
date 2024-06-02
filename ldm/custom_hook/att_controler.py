@@ -41,16 +41,16 @@ class AttentionController(object):
         return points
 
     def set_attn_data(self, attension, cls_tkn_pos, heads, position=None):
-        assert position in ["down", "up", "middel"], "the attention type must be specified!"
+        # assert position in ["down", "up", "middel"], "the attention type must be specified!"
 
         if self._temp_T == self.T:
             uc_c, spatial_dim, dim = attension.shape
 
             resolution = spatial_dim ** 0.5
 
-            if spatial_dim == dim:
+            if position == "self":
                 self._self_attn[resolution].append(attension.view(-1, heads, spatial_dim, spatial_dim))
-            else:
+            elif position == "cross":
                 self._cross_attn[resolution].append(attension.view(-1, heads, spatial_dim, dim))
 
     def aggregate_cross_attention(self, weight_ratio=[1.0, 1.0, 1.0, 1.0]):
@@ -95,7 +95,8 @@ class AttentionController(object):
 
         segments = self.segment()[0]
 
-        cross = self.aggregate_cross_attention()
+        # cross = self.aggregate_cross_attention()
+        cross = 0
 
         return segments, cross
 

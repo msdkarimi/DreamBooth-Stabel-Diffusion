@@ -69,7 +69,7 @@ class AttentionController(object):
             size = int(spatial ** 0.5)
             scale_factor = int(CONSTANTS.IMAGE_RESOLUTION.value/size)
 
-            _map = _map.mean(0).permute(0, 1)
+            _map = _map.mean(0).permute(1, 0)
             _map = _map.view(dim, size, size).unsqueeze(0)
             _map = F.interpolate(_map, scale_factor=scale_factor, mode='bilinear', align_corners=False).squeeze(0)
             _map = _map.permute(1, 2, 0)

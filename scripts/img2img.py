@@ -14,7 +14,8 @@ from torch import autocast
 from contextlib import nullcontext
 import time
 from pytorch_lightning import seed_everything
-
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(parent_dir)
 from ldm.util import instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
@@ -204,7 +205,7 @@ def main():
 
     if opt.plms:
         raise NotImplementedError("PLMS sampler not (yet) supported")
-        sampler = PLMSSampler(model)
+        sampler = PLMSSampler(model,  total_steps=opt.ddim_steps)
     else:
         sampler = DDIMSampler(model)
 

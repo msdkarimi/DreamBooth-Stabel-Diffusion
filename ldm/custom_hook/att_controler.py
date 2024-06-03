@@ -14,7 +14,7 @@ class CONSTANTS(Enum):
 
 class AttentionController(object):
 
-    def __init__(self, total_steps, num_points=16, refine=True):
+    def __init__(self, total_steps, num_points=64, refine=True):
 
         self._self_attn = {64: [], 32: [], 16: [], 8: []}
         self._cross_attn = {64: [], 32: [], 16: [], 8: []}

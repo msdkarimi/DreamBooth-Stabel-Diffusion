@@ -5,6 +5,7 @@ import clip
 from einops import rearrange, repeat
 from transformers import CLIPTokenizer, CLIPTextModel
 import kornia
+from nltk import pos_tag, word_tokenize
 
 from ldm.modules.x_transformer import Encoder, TransformerWrapper  # TODO: can we directly rely on lucidrains code and simply add this as a reuirement? --> test
 
@@ -150,10 +151,24 @@ class FrozenCLIPEmbedder(AbstractEncoder):
             param.requires_grad = False
 
     def forward(self, text):
+        tokens = word_tokenize(text)
+        pos_tags = pos_tag(tokens)
+        nouns = [word for word, pos in pos_tags if pos[:2] == 'NN']
+        new_txt = " ".join(nouns)
+
+        nouns_encoding = self.tokenizer(new_txt, truncation=True, max_length=self.max_length, return_length=True,
+                                        return_overflowing_tokens=False, padding="max_length", return_tensors="pt")
+
+        nouns_tokens = nouns_encoding["input_ids"]
+        nouns_tokens = [nouns_tokens[0, i+1] for i in range(len(nouns))]
+
         batch_encoding = self.tokenizer(text, truncation=True, max_length=self.max_length, return_length=True,
                                         return_overflowing_tokens=False, padding="max_length", return_tensors="pt")
         tokens = batch_encoding["input_ids"].to(self.device)
         outputs = self.transformer(input_ids=tokens)
+
+        for n_t in nouns_tokens:
+            print((tokens[0] == n_t).nonzero(as_tuple=True)[0])
 
         z = outputs.last_hidden_state
         return z

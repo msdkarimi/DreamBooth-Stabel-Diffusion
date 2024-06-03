@@ -165,6 +165,7 @@ class FrozenCLIPEmbedder(AbstractEncoder):
         batch_encoding = self.tokenizer(text, truncation=True, max_length=self.max_length, return_length=True,
                                         return_overflowing_tokens=False, padding="max_length", return_tensors="pt")
         tokens = batch_encoding["input_ids"].to(self.device)
+        print(f'tokens= {tokens}')
         outputs = self.transformer(input_ids=tokens)
 
         # for n_t in nouns_tokens:

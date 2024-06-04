@@ -178,10 +178,11 @@ class PLMSSampler(object):
                 intermediates['x_inter'].append(img)
                 intermediates['pred_x0'].append(pred_x0)
 
-        cross_map = attn_c.aggregate()
+        cross_map, self_map, concat = attn_c.aggregate()
 
         torch.save(cross_map, '/content/masks/cross_map.pth')
-        # torch.save(self_map, '/content/masks/self_map.pth')
+        torch.save(self_map, '/content/masks/self_map.pth')
+        torch.save(concat, '/content/masks/concat_map.pth')
 
         return img, intermediates
 

@@ -117,7 +117,7 @@ class AttentionController(object):
         for _, times in self._self_attn.items():
             maps_self += torch.stack(times).sum(dim=0)
 
-        _cross, _self = self.post_proce()
+        # _cross, _self = self.post_proce()
 
         return maps_cross / (T * L_CROSS), maps_self / (T * L_SELF), self.post_process(maps_cross / (T * L_CROSS), maps_self / (T * L_SELF))
 

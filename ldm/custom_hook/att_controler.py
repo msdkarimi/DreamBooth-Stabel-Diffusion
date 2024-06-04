@@ -2,6 +2,7 @@ from enum import Enum
 from collections import defaultdict
 import torch
 import torch.nn.functional as F
+import cv2
 
 
 class Constants(Enum):
@@ -11,9 +12,10 @@ class Constants(Enum):
     TARGET_CROSS_RESOLUTION = 16
     TARGET_SELF_RESOLUTION = 32
 
-    ALPHA = 0.5
-    BETA = 0.6
+    ALPHA = 0.8
+    BETA = 1.01
     THAU = 0.75
+
 
 
 class AttentionController(object):
@@ -28,6 +30,10 @@ class AttentionController(object):
 
         self._layers_self = 0
         self._layers_cross = 0
+
+        self._image_counter = -1
+
+
 
         super().__init__()
 
@@ -118,9 +124,14 @@ class AttentionController(object):
             maps_self += torch.stack(times).sum(dim=0)
 
         # _cross, _self = self.post_proce()
+        _cross = maps_cross / (T * L_CROSS)
+        _self = maps_self / (T * L_SELF)
+        masks = self.post_process(_cross, _self)
 
-        return maps_cross / (T * L_CROSS), maps_self / (T * L_SELF), self.post_process(maps_cross / (T * L_CROSS), maps_self / (T * L_SELF))
+        self.create_dataset(masks)
 
+        # return _cross, _self, self.post_process(_cross, _self)
+        return 0, 0, 0
 
 
     def pre_processes(self, data, heads, cls_tkn_pos, attn_type):
@@ -149,3 +160,30 @@ class AttentionController(object):
 
     def increment_temp_T(self):
         self._temp_T += 1
+
+    def set_token_idx(self, idx):
+        self.token_idx = idx
+
+
+    def create_dataset(self, masks):
+        filtered = masks[self.token_idx, :, :]
+        for idx in range(filtered.shape[0]):
+            mask = filtered[idx, :, :]
+
+            _max_value = torch.max(f.flatten())
+            _min_value = torch.min(f.flatten())
+            f = (f - _min_value) / (_max_value - _min_value)
+
+            mask_bg = f < Constants.ALPHA
+            mask_u = (f >= Constants.ALPHA) & (f < Constants.BETA)
+            otherwise = ~(mask_bg | mask_u)
+            f[mask_bg] = 0
+            f[mask_u] = 255
+            f[otherwise] = 0
+
+            cv2.imwrite(f'/content/masks/{self._image_counter:05}.png', f)
+            self._image_counter += 1
+
+
+
+

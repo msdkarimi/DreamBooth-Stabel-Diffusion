@@ -79,6 +79,7 @@ class PLMSSampler(object):
                log_every_t=100,
                unconditional_guidance_scale=1.,
                unconditional_conditioning=None,
+               token_idx=None,
                # this has to come in the same format as the conditioning, # e.g. as encoded tokens, ...
                **kwargs
                ):
@@ -111,7 +112,8 @@ class PLMSSampler(object):
                                                     log_every_t=log_every_t,
                                                     unconditional_guidance_scale=unconditional_guidance_scale,
                                                     unconditional_conditioning=unconditional_conditioning,
-                                                    attn_c=self.attn_controller
+                                                    attn_c=self.attn_controller,
+                                                    token_idx=token_idx
                                                     )
         return samples, intermediates
 
@@ -121,7 +123,7 @@ class PLMSSampler(object):
                       callback=None, timesteps=None, quantize_denoised=False,
                       mask=None, x0=None, img_callback=None, log_every_t=100,
                       temperature=1., noise_dropout=0., score_corrector=None, corrector_kwargs=None,
-                      unconditional_guidance_scale=1., unconditional_conditioning=None, attn_c=None):
+                      unconditional_guidance_scale=1., unconditional_conditioning=None, attn_c=None, token_idx=None):
         device = self.model.betas.device
         b = shape[0]
         if x_T is None:
@@ -145,6 +147,7 @@ class PLMSSampler(object):
 
         for i, step in enumerate(iterator):
 
+            token_idx
             attn_c.increment_temp_T()
 
             index = total_steps - i - 1
@@ -178,11 +181,11 @@ class PLMSSampler(object):
                 intermediates['x_inter'].append(img)
                 intermediates['pred_x0'].append(pred_x0)
 
-        cross_map, self_map, concat = attn_c.aggregate()
+        _, _, _ = attn_c.aggregate()
 
-        torch.save(cross_map, '/content/masks/cross_map.pth')
-        torch.save(self_map, '/content/masks/self_map.pth')
-        torch.save(concat, '/content/masks/concat_map.pth')
+        # torch.save(cross_map, '/content/masks/cross_map.pth')
+        # torch.save(self_map, '/content/masks/self_map.pth')
+        # torch.save(concat, '/content/masks/concat_map.pth')
 
         return img, intermediates
 

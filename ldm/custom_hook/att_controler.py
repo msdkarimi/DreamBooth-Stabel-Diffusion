@@ -3,6 +3,8 @@ from collections import defaultdict
 import torch
 import torch.nn.functional as F
 import cv2
+from PIL import Image
+import numpy as np
 
 
 class Constants(Enum):
@@ -31,7 +33,7 @@ class AttentionController(object):
         self._layers_self = 0
         self._layers_cross = 0
 
-        self._image_counter = -1
+        self._image_counter = 0
 
 
 
@@ -170,20 +172,28 @@ class AttentionController(object):
         for idx in range(filtered.shape[0]):
             mask = filtered[idx, :, :]
 
-            _max_value = torch.max(f.flatten())
-            _min_value = torch.min(f.flatten())
-            f = (f - _min_value) / (_max_value - _min_value)
+            _max_value = torch.max(mask.flatten())
+            _min_value = torch.min(mask.flatten())
+            mask = (mask - _min_value) / (_max_value - _min_value)
 
-            mask_bg = f < Constants.ALPHA
-            mask_u = (f >= Constants.ALPHA) & (f < Constants.BETA)
+            mask_bg = mask < Constants.ALPHA.value
+            mask_u = (mask >= Constants.ALPHA.value) & (mask < Constants.BETA.value)
             otherwise = ~(mask_bg | mask_u)
-            f[mask_bg] = 0
-            f[mask_u] = 255
-            f[otherwise] = 0
+            mask[mask_bg] = 0
+            mask[mask_u] = 255
+            mask[otherwise] = 0
 
-            cv2.imwrite(f'/content/masks/{self._image_counter:05}.png', f)
-            self._image_counter += 1
+            output_dir = '/content/masks/'
+            name = f'{output_dir}{self._image_counter:05}.png'
 
+            img = mask.cpu().numpy().astype(np.uint8)
+            image = Image.fromarray(img)
+            image.save(name)
+
+
+            # cv2.imwrite(name, mask)
+            # self._image_counter += 1
+            #
 
 
 

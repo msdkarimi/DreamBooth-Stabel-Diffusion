@@ -147,7 +147,7 @@ class PLMSSampler(object):
 
         for i, step in enumerate(iterator):
 
-            token_idx
+            attn_c.set_token_idx(token_idx)
             attn_c.increment_temp_T()
 
             index = total_steps - i - 1

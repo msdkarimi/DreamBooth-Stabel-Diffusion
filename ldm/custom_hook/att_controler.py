@@ -126,10 +126,10 @@ class AttentionController(object):
     def pre_processes(self, data, heads, cls_tkn_pos, attn_type):
         if attn_type == "cross":
             if not isinstance(cls_tkn_pos, list):
-                result = data.view(-1, heads, data.shape[-2], data.shape[-1]).transpose(2, 3)[1, :, :, :].mean(dim=0).transpose(0, 1).view(-1, 16, 16).unsqueeze(0)
+                result = data.view(-1, heads, data.shape[-2], data.shape[-1]).transpose(2, 3)[1, :, :, :].mean(dim=0).view(-1, 16, 16).unsqueeze(0)
                 if attn_type == "cross":
 
-                    return F.interpolate(result, size=(32, 32), mode='bilinear', align_corners=False).squeeze(0).view(1, -1).transpose(0, 1)
+                    return F.interpolate(result, size=(32, 32), mode='bilinear', align_corners=False).squeeze(0).view(77, -1).transpose(0, 1)
 
                     # return result.view(Constants.TARGET_CROSS_RESOLUTION.value, Constants.TARGET_CROSS_RESOLUTION.value).unsqueeze(0).unsqueeze(0)
                 else:

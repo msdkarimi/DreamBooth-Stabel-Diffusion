@@ -284,12 +284,12 @@ def main():
     grid_count = len(os.listdir(outpath)) - 1
 
     _prompts = [
-                   (['a photo of a pipe on wall; pipe'], [9], "pipe"),
-                   (['A wall with dark mold patches spreading across its surface; dark mold spots'], [13], "dark mold"),
-                   (['A photo of a living space with water damage on the floor; floor water'], [15], "water spillage"),
+                   (['a photo of a pipe on wall; pipe'], [5], "pipe"),
+                   (['A wall with dark mold patches spreading across its surface; dark mold spots'], [5], "dark mold"),
+                   (['A photo of a living space with water damage on the floor; floor water'], [8], "water spillage"),
                    (['A wall with severe water damage and large subtle yellow stains spreading from the ceiling and wall; stain'], [11], "light stain"),
                    (['A wall with severe water damage and large faint dark stains spreading from the ceiling and wall; stain'], [11], "dark stain"),
-                   (['an image of a water-damaged wall with visible white mold patches '], [12], "white mold"),
+                   (['an image of a water-damaged wall with visible white mold patches'], [12], "white mold"),
                 ]
 
     start_code = None

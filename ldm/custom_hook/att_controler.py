@@ -147,10 +147,10 @@ class AttentionController(object):
         _self = maps_self / (T * L_SELF)
         masks = self.post_process(_cross, _self)
 
-        self.create_dataset(masks)
+        # self.create_dataset(masks)
 
         # return _cross, _self, self.post_process(_cross, _self)
-        return 0, 0, 0
+        return masks
 
 
     def pre_processes(self, data, heads, cls_tkn_pos, attn_type):

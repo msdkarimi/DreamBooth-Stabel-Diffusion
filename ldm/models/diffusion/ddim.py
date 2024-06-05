@@ -4,6 +4,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from functools import partial
+from ldm.custom_hook.att_controler import AttentionController
 
 from ldm.modules.diffusionmodules.util import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like, \
     extract_into_tensor
@@ -15,6 +16,8 @@ class DDIMSampler(object):
         self.model = model
         self.ddpm_num_timesteps = model.num_timesteps
         self.schedule = schedule
+
+        self.attn_controller = AttentionController()
 
     def register_buffer(self, name, attr):
         if type(attr) == torch.Tensor:
@@ -137,7 +140,13 @@ class DDIMSampler(object):
 
         iterator = tqdm(time_range, desc='DDIM Sampler', total=total_steps)
 
+        self.attn_controller.reset_attn_data()
+
+        # self.attn_controller.set_token_idx(token_idx)
+        # self.attn_controller.set_token_lbl(lbl)
+
         for i, step in enumerate(iterator):
+
             index = total_steps - i - 1
             ts = torch.full((b,), step, device=device, dtype=torch.long)
 
@@ -151,7 +160,11 @@ class DDIMSampler(object):
                                       noise_dropout=noise_dropout, score_corrector=score_corrector,
                                       corrector_kwargs=corrector_kwargs,
                                       unconditional_guidance_scale=unconditional_guidance_scale,
-                                      unconditional_conditioning=unconditional_conditioning)
+                                      unconditional_conditioning=unconditional_conditioning,
+                                      )
+
+
+
             img, pred_x0 = outs
             if callback: callback(i)
             if img_callback: img_callback(pred_x0, i)
@@ -165,7 +178,7 @@ class DDIMSampler(object):
     @torch.no_grad()
     def p_sample_ddim(self, x, c, t, index, repeat_noise=False, use_original_steps=False, quantize_denoised=False,
                       temperature=1., noise_dropout=0., score_corrector=None, corrector_kwargs=None,
-                      unconditional_guidance_scale=1., unconditional_conditioning=None):
+                      unconditional_guidance_scale=1., unconditional_conditioning=None, attn_c=None):
         b, *_, device = *x.shape, x.device
 
         if unconditional_conditioning is None or unconditional_guidance_scale == 1.:
@@ -174,7 +187,7 @@ class DDIMSampler(object):
             x_in = torch.cat([x] * 2)
             t_in = torch.cat([t] * 2)
             c_in = torch.cat([unconditional_conditioning, c])
-            e_t_uncond, e_t = self.model.apply_model(x_in, t_in, c_in).chunk(2)
+            e_t_uncond, e_t = self.model.apply_model(x_in, t_in, c_in, attn_c=attn_c).chunk(2)
             e_t = e_t_uncond + unconditional_guidance_scale * (e_t - e_t_uncond)
 
         if score_corrector is not None:
@@ -233,9 +246,24 @@ class DDIMSampler(object):
         iterator = tqdm(time_range, desc='Decoding image', total=total_steps)
         x_dec = x_latent
         for i, step in enumerate(iterator):
+
+            self.attn_controller.increment_temp_T()
+
             index = total_steps - i - 1
             ts = torch.full((x_latent.shape[0],), step, device=x_latent.device, dtype=torch.long)
             x_dec, _ = self.p_sample_ddim(x_dec, cond, ts, index=index, use_original_steps=use_original_steps,
                                           unconditional_guidance_scale=unconditional_guidance_scale,
-                                          unconditional_conditioning=unconditional_conditioning)
+                                          unconditional_conditioning=unconditional_conditioning,
+                                          attn_c=self.attn_controller)
+
+
+            self.attn_controller.increment_T()
+
+
+        concat = self.attn_controller.aggregate()
+        # torch.save(cross_map, '/content/masks/cross_map.pth')
+        # torch.save(self_map, '/content/masks/self_map.pth')
+        torch.save(concat, '/content/masks/concat_map.pth')
+
+
         return x_dec

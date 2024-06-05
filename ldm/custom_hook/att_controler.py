@@ -15,7 +15,7 @@ class Constants(Enum):
     TARGET_CROSS_RESOLUTION = 16
     TARGET_SELF_RESOLUTION = 32
 
-    ALPHA = 0.8
+    ALPHA = 0.75
     BETA = 1.01
     THAU = 0.75
 

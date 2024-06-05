@@ -80,6 +80,7 @@ class PLMSSampler(object):
                unconditional_guidance_scale=1.,
                unconditional_conditioning=None,
                token_idx=None,
+               lbl=None,
                # this has to come in the same format as the conditioning, # e.g. as encoded tokens, ...
                **kwargs
                ):
@@ -113,7 +114,8 @@ class PLMSSampler(object):
                                                     unconditional_guidance_scale=unconditional_guidance_scale,
                                                     unconditional_conditioning=unconditional_conditioning,
                                                     attn_c=self.attn_controller,
-                                                    token_idx=token_idx
+                                                    token_idx=token_idx,
+                                                    lbl=lbl
                                                     )
         return samples, intermediates
 
@@ -123,7 +125,7 @@ class PLMSSampler(object):
                       callback=None, timesteps=None, quantize_denoised=False,
                       mask=None, x0=None, img_callback=None, log_every_t=100,
                       temperature=1., noise_dropout=0., score_corrector=None, corrector_kwargs=None,
-                      unconditional_guidance_scale=1., unconditional_conditioning=None, attn_c=None, token_idx=None):
+                      unconditional_guidance_scale=1., unconditional_conditioning=None, attn_c=None, token_idx=None, lbl=None):
         device = self.model.betas.device
         b = shape[0]
         if x_T is None:
@@ -145,9 +147,14 @@ class PLMSSampler(object):
         iterator = tqdm(time_range, desc='PLMS Sampler', total=total_steps)
         old_eps = []
 
+        attn_c.reset_attn_data()
+
+        attn_c.set_token_idx(token_idx)
+        attn_c.set_token_lbl(lbl)
+
         for i, step in enumerate(iterator):
 
-            attn_c.set_token_idx(token_idx)
+
             attn_c.increment_temp_T()
 
             index = total_steps - i - 1

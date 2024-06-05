@@ -283,12 +283,14 @@ def main():
     base_count = len(os.listdir(sample_path))
     grid_count = len(os.listdir(outpath)) - 1
 
-    _prompts = [(['a photo of a pipe on wall; pipe'], [9]),
-               (['A wall with dark mold patches spreading across its surface; dark mold spots'], [13]),
-               (['A photo of a living space with water damage on the floor; floor water'], [15]),
-               (['A wall with severe water damage and large subtle yellow stains spreading from the ceiling and wall; stain'], [11]),
-               (['A wall with severe water damage and large faint dark stains spreading from the ceiling and wall; stain'], [11]),
-               (['an image of a water-damaged wall with visible white mold patches '], [12])]
+    _prompts = [
+                   (['a photo of a pipe on wall; pipe'], [9], "pipe"),
+                   (['A wall with dark mold patches spreading across its surface; dark mold spots'], [13], "dark mold"),
+                   (['A photo of a living space with water damage on the floor; floor water'], [15], "water spillage"),
+                   (['A wall with severe water damage and large subtle yellow stains spreading from the ceiling and wall; stain'], [11], "light stain"),
+                   (['A wall with severe water damage and large faint dark stains spreading from the ceiling and wall; stain'], [11], "dark stain"),
+                   (['an image of a water-damaged wall with visible white mold patches '], [12], "white mold"),
+                ]
 
     start_code = None
     if opt.fixed_code:
@@ -308,7 +310,7 @@ def main():
                                 uc = model.get_learned_conditioning(batch_size * [""])
                             if isinstance(prompts, tuple):
                                 prompts = list(prompts)
-                            prompts, token_idx = _prompts[idx_prompt]
+                            prompts, token_idx, lbl = _prompts[idx_prompt]
                             c = model.get_learned_conditioning(prompts)
                             shape = [opt.C, opt.H // opt.f, opt.W // opt.f]
                             samples_ddim, _ = sampler.sample(S=opt.ddim_steps,
@@ -320,7 +322,8 @@ def main():
                                                              unconditional_conditioning=uc,
                                                              eta=opt.ddim_eta,
                                                              x_T=start_code,
-                                                             token_idx=token_idx)
+                                                             token_idx=token_idx,
+                                                             lbl=lbl)
 
                             x_samples_ddim = model.decode_first_stage(samples_ddim)
                             x_samples_ddim = torch.clamp((x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0)

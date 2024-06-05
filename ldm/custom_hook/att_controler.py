@@ -24,6 +24,9 @@ class AttentionController(object):
 
     def __init__(self):
 
+        self.lbl = None
+        self.token_idx = -1
+
         self._self_attn = defaultdict(list)
         self._cross_attn = defaultdict(list)
 
@@ -38,6 +41,19 @@ class AttentionController(object):
 
 
         super().__init__()
+
+    def reset_attn_data(self):
+        self.lbl = None
+        self.token_idx = -1
+        
+        self._self_attn = defaultdict(list)
+        self._cross_attn = defaultdict(list)
+
+        self._T = 0
+        self._temp_T = 0
+        self._layers_self = 0
+        self._layers_cross = 0
+
 
     def set_attn_data(self, data, cls_tkn_pos, heads, attn_type=None):
         assert attn_type in ["self", "cross"], "the attention type must be specified!"
@@ -165,6 +181,9 @@ class AttentionController(object):
 
     def set_token_idx(self, idx):
         self.token_idx = idx
+
+    def set_token_lbl(self, lbl):
+        self.lbl = lbl
 
 
     def create_dataset(self, masks):

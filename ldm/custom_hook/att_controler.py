@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import cv2
 from PIL import Image
 import numpy as np
+import os
 
 
 class Constants(Enum):
@@ -36,7 +37,7 @@ class AttentionController(object):
         self._layers_self = 0
         self._layers_cross = 0
 
-        self._image_counter = 0
+        self._image_counter = len(os.listdir("/content/masks"))-1
 
 
 

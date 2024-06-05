@@ -208,6 +208,7 @@ class AttentionController(object):
             img = mask.cpu().numpy().astype(np.uint8)
             image = Image.fromarray(img)
             image.save(name)
+            self._image_counter += 1
 
 
             # cv2.imwrite(name, mask)

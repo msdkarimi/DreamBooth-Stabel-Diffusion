@@ -3,7 +3,7 @@ from collections import defaultdict
 import torch
 import torch.nn.functional as F
 import cv2
-from PIL import Image
+from PIL import Image, ImageDraw
 import numpy as np
 import os
 
@@ -204,10 +204,19 @@ class AttentionController(object):
             mask[otherwise] = 0
 
             output_dir = '/content/masks/'
-            name = f'{output_dir}{self._image_counter:05}_{self.lbl}.png'
+            name = f'{output_dir}{self._image_counter:05}.png'
 
             img = mask.cpu().numpy().astype(np.uint8)
             image = Image.fromarray(img)
+
+            if image.mode != 'RGBA':
+                image = image.convert('RGBA')
+
+            position = (100, 100,)  # Adjust the position as needed
+            draw = ImageDraw.Draw(image)
+            text_color = (255, 0, 0)
+            draw.text(position, self.lbl, fill=text_color)
+
             image.save(name)
             self._image_counter += 1
 

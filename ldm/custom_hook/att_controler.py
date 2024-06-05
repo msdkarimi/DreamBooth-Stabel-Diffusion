@@ -45,7 +45,7 @@ class AttentionController(object):
     def reset_attn_data(self):
         self.lbl = None
         self.token_idx = -1
-        
+
         self._self_attn = defaultdict(list)
         self._cross_attn = defaultdict(list)
 
@@ -203,7 +203,7 @@ class AttentionController(object):
             mask[otherwise] = 0
 
             output_dir = '/content/masks/'
-            name = f'{output_dir}{self._image_counter:05}.png'
+            name = f'{output_dir}{self._image_counter:05}_{self.lbl}.png'
 
             img = mask.cpu().numpy().astype(np.uint8)
             image = Image.fromarray(img)

@@ -154,14 +154,14 @@ def main():
     parser.add_argument(
         "--scale",
         type=float,
-        default=3.0,
+        default=5.0,
         help="unconditional guidance scale: eps = eps(x, empty) + scale * (eps(x, cond) - eps(x, empty))",
     )
 
     parser.add_argument(
         "--strength",
         type=float,
-        default=0.75,
+        default=0.70,
         help="strength for noising/unnoising. 1.0 corresponds to full destruction of information in init image",
     )
     parser.add_argument(

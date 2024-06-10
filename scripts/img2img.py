@@ -13,6 +13,7 @@ from torchvision.utils import make_grid
 from torch import autocast
 from contextlib import nullcontext
 import time
+import random
 from pytorch_lightning import seed_everything
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(parent_dir)
@@ -183,7 +184,7 @@ def main():
     parser.add_argument(
         "--seed",
         type=int,
-        default=42,
+        default=random.randint(1, 234598),
         help="the seed (for reproducible sampling)",
     )
     parser.add_argument(

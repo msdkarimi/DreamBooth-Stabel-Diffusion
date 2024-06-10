@@ -100,7 +100,7 @@ def main():
     parser.add_argument(
         "--ddim_steps",
         type=int,
-        default=800,
+        default=250,
         help="number of ddim sampling steps",
     )
 

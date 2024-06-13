@@ -154,7 +154,7 @@ def main():
     parser.add_argument(
         "--scale",
         type=float,
-        default=5.0,
+        default=2.0,
         help="unconditional guidance scale: eps = eps(x, empty) + scale * (eps(x, cond) - eps(x, empty))",
     )
 

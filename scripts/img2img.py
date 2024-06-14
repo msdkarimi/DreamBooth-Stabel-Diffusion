@@ -231,10 +231,12 @@ def main():
     base_count = len(os.listdir(sample_path))
     grid_count = len(os.listdir(outpath)) - 1
 
-    assert os.path.isfile(opt.init_img)
-    init_image = load_img(opt.init_img).to(device)
-    init_image = repeat(init_image, '1 ... -> b ...', b=batch_size)
-    init_latent = model.get_first_stage_encoding(model.encode_first_stage(init_image))  # move to latent space
+    # dataset_dir =
+
+    # assert os.path.isfile(opt.init_img)
+    # init_image = load_img(opt.init_img).to(device)
+    # init_image = repeat(init_image, '1 ... -> b ...', b=batch_size)
+    # init_latent = model.get_first_stage_encoding(model.encode_first_stage(init_image))  # move to latent space
 
     sampler.make_schedule(ddim_num_steps=opt.ddim_steps, ddim_eta=opt.ddim_eta, verbose=False)
 
@@ -242,50 +244,94 @@ def main():
     t_enc = int(opt.strength * opt.ddim_steps)
     print(f"target t_enc is {t_enc} steps")
 
+    dict_of_data = {
+        "broken_pipe": ("a photo of a broken pipe in the wall", 6),
+        "dark_mold": ("A photo of a ceiling with dark mold in a bathroom", 8),
+        "dark_stain": ("an image of a ceiling showing a prominent dark stain, suggesting water damage in an aged room", 10),
+        "light_mold": ("A photo of a wall with light mold growth, indicating moisture damages", 8),
+        "light_stain": ("a photo of a white wall shows light stain, indicating water damage caused by moisture", 9),
+        "liquid_spillage": ("A photo of a floor with spilled water", 8),
+        "peeling": ("A photo of a wall with peeling", 7),
+        "pipe": ("A photo of a pipe", 5),
+        "raising": ("a photo of a wall with blisters caused by moisture", 7),
+    }
+
+
+
     precision_scope = autocast if opt.precision == "autocast" else nullcontext
     with torch.no_grad():
         with precision_scope("cuda"):
             with model.ema_scope():
                 tic = time.time()
                 all_samples = list()
-                for n in trange(opt.n_iter, desc="Sampling"):
-                    for prompts in tqdm(data, desc="data"):
-                        uc = None
-                        if opt.scale != 1.0:
-                            uc = model.get_learned_conditioning(batch_size * [""])
-                        if isinstance(prompts, tuple):
-                            prompts = list(prompts)
-                        c = model.get_learned_conditioning(prompts)
+                for label_folder in dict_of_data:
 
-                        # encode (scaled latent)
-                        z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]*batch_size).to(device))
-                        # decode it
-                        samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=opt.scale,
-                                                 unconditional_conditioning=uc,)
+                    ## we don't want it to be random, otherwise, intra-class imbalance
+                    _root = "../input_images"
+                    # label_dirs = os.listdir(_root)
+                    # random_label_index = random.randint(0, len(label_dirs)-1)
+                    # label_folder = label_dirs[random_label_index]
+                    #
 
-                        x_samples = model.decode_first_stage(samples)
-                        x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
 
-                        if not opt.skip_save:
-                            for x_sample in x_samples:
-                                x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
-                                Image.fromarray(x_sample.astype(np.uint8)).save(
-                                    os.path.join(sample_path, f"{base_count:05}.png"))
-                                base_count += 1
-                        all_samples.append(x_samples)
+                    list_label_images = os.listdir(f'{_root}/{label_folder}')
+                    random_label_image_index = random.randint(0, len(list_label_images) - 1)
+                    the_image_path = f'{_root}/{label_folder}/{list_label_images[random_label_image_index]}'
 
-                if not opt.skip_grid:
-                    # additionally, save as grid
-                    grid = torch.stack(all_samples, 0)
-                    grid = rearrange(grid, 'n b c h w -> (n b) c h w')
-                    grid = make_grid(grid, nrow=n_rows)
+                    # setting image dir,
+                    opt.init_img = the_image_path
 
-                    # to image
-                    grid = 255. * rearrange(grid, 'c h w -> h w c').cpu().numpy()
-                    Image.fromarray(grid.astype(np.uint8)).save(os.path.join(outpath, f'grid-{grid_count:04}.png'))
-                    grid_count += 1
+                    # moving selected image to latent
+                    assert os.path.isfile(opt.init_img)
+                    init_image = load_img(opt.init_img).to(device)
+                    init_image = repeat(init_image, '1 ... -> b ...', b=batch_size)
+                    init_latent = model.get_first_stage_encoding(model.encode_first_stage(init_image))  # move to latent space
 
-                toc = time.time()
+
+                    for n in trange(opt.n_iter, desc="Sampling"):
+                        for prompts in tqdm(data, desc="data"):
+                            uc = None
+                            if opt.scale != 1.0:
+                                uc = model.get_learned_conditioning(batch_size * [""])
+                            if isinstance(prompts, tuple):
+                                prompts = list(prompts)
+
+                            prompts, index_of_token = dict_of_data[label_folder]
+
+                            c = model.get_learned_conditioning(prompts)
+
+                            # encode (scaled latent)
+                            z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]*batch_size).to(device))
+                            # decode it
+                            samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=opt.scale,
+                                                     unconditional_conditioning=uc,
+                                                     index_of_token=index_of_token, label_folder=label_folder,
+                                                     image_name=base_count)
+
+                            x_samples = model.decode_first_stage(samples)
+                            x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
+
+                            if not opt.skip_save:
+                                for x_sample in x_samples:
+                                    x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
+                                    Image.fromarray(x_sample.astype(np.uint8)).save(
+                                        # os.path.join(sample_path, f"{base_count:05}.jpg"))
+                                        os.path.join(f'/_dataset/{label_folder}/images', f"{base_count:05}.jpg"))
+                                    base_count += 1
+                            # all_samples.append(x_samples)
+
+                    # if not opt.skip_grid:
+                    #     # additionally, save as grid
+                    #     grid = torch.stack(all_samples, 0)
+                    #     grid = rearrange(grid, 'n b c h w -> (n b) c h w')
+                    #     grid = make_grid(grid, nrow=n_rows)
+                    #
+                    #     # to image
+                    #     grid = 255. * rearrange(grid, 'c h w -> h w c').cpu().numpy()
+                    #     Image.fromarray(grid.astype(np.uint8)).save(os.path.join(outpath, f'grid-{grid_count:04}.png'))
+                    #     grid_count += 1
+
+                    # toc = time.time()
 
     print(f"Your samples are ready and waiting for you here: \n{outpath} \n"
           f" \nEnjoy.")

@@ -234,7 +234,7 @@ class DDIMSampler(object):
 
     @torch.no_grad()
     def decode(self, x_latent, cond, t_start, unconditional_guidance_scale=1.0, unconditional_conditioning=None,
-               use_original_steps=False):
+               use_original_steps=False, index_of_token=None, label_folder=None, image_name=None):
 
         timesteps = np.arange(self.ddpm_num_timesteps) if use_original_steps else self.ddim_timesteps
         timesteps = timesteps[:t_start]
@@ -245,6 +245,10 @@ class DDIMSampler(object):
 
         iterator = tqdm(time_range, desc='Decoding image', total=total_steps)
         x_dec = x_latent
+
+        self.attn_controller.reset_attn_data()
+        self.attn_controller.set_token_idx(index_of_token)
+
         for i, step in enumerate(iterator):
 
             self.attn_controller.increment_temp_T()
@@ -263,7 +267,10 @@ class DDIMSampler(object):
         concat = self.attn_controller.aggregate()
         # torch.save(cross_map, '/content/masks/cross_map.pth')
         # torch.save(self_map, '/content/masks/self_map.pth')
-        torch.save(concat, '/content/masks/concat_map.pth')
+
+        # torch.save(concat, '/content/masks/concat_map.pth')
+
+        self.attn_controller.create_dataset(concat, label_folder, image_name)
 
 
         return x_dec

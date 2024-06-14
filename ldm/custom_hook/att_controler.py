@@ -15,7 +15,7 @@ class Constants(Enum):
     TARGET_CROSS_RESOLUTION = 16
     TARGET_SELF_RESOLUTION = 32
 
-    ALPHA = 0.8
+    ALPHA = 0.7
     BETA = 1.01
     THAU = 0.75
 
@@ -187,34 +187,45 @@ class AttentionController(object):
         self.lbl = lbl
 
 
-    def create_dataset(self, masks):
-        filtered = masks[self.token_idx, :, :]
-        for idx in range(filtered.shape[0]):
-            mask = filtered[idx, :, :]
+    def create_dataset(self, masks, label_folder, image_name:int):
+        mask = masks[self.token_idx, :, :]
+        _max_value = torch.max(mask.flatten())
+        _min_value = torch.min(mask.flatten())
+        mask = (mask - _min_value) / (_max_value - _min_value)
 
-            _max_value = torch.max(mask.flatten())
-            _min_value = torch.min(mask.flatten())
-            mask = (mask - _min_value) / (_max_value - _min_value)
-
-            mask_bg = mask < Constants.ALPHA.value
-            mask_u = (mask >= Constants.ALPHA.value) & (mask < Constants.BETA.value)
-            otherwise = ~(mask_bg | mask_u)
-            mask[mask_bg] = 0
-            mask[mask_u] = 255
-            mask[otherwise] = 0
-
-            output_dir = '/content/masks/'
-            name = f'{output_dir}{self._image_counter:05}_{self.lbl}.png'
-
-            img = mask.cpu().numpy().astype(np.uint8)
-            image = Image.fromarray(img)
-            image.save(name)
-            self._image_counter += 1
+        mask_bg = mask < Constants.ALPHA.value
+        mask_u = (mask >= Constants.ALPHA.value) & (mask < Constants.BETA.value)
+        otherwise = ~(mask_bg | mask_u)
+        mask[mask_bg] = 0
+        mask[mask_u] = 255
+        mask[otherwise] = 0
+        cv2.imwrite(f'/content/_dataset/{label_folder}/masks/{image_name:05}.png', mask.cpu().numpy())
 
 
-            # cv2.imwrite(name, mask)
-            # self._image_counter += 1
-            #
-
+        # filtered = masks[self.token_idx, :, :]
+        # for idx in range(filtered.shape[0]):
+        #     mask = filtered[idx, :, :]
+        #
+        #     _max_value = torch.max(mask.flatten())
+        #     _min_value = torch.min(mask.flatten())
+        #     mask = (mask - _min_value) / (_max_value - _min_value)
+        #
+        #     mask_bg = mask < Constants.ALPHA.value
+        #     mask_u = (mask >= Constants.ALPHA.value) & (mask < Constants.BETA.value)
+        #     otherwise = ~(mask_bg | mask_u)
+        #     mask[mask_bg] = 0
+        #     mask[mask_u] = 255
+        #     mask[otherwise] = 0
+        #
+        #     output_dir = '/content/masks/'
+        #     name = f'{output_dir}{self._image_counter:05}_{self.lbl}.png'
+        #
+        #     img = mask.cpu().numpy().astype(np.uint8)
+        #     image = Image.fromarray(img)
+        #     image.save(name)
+        #     self._image_counter += 1
+        #
+        #
+        #     # cv2.imwrite(name, mask)
 
 

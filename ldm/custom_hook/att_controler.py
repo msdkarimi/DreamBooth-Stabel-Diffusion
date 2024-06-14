@@ -6,6 +6,9 @@ import cv2
 from PIL import Image
 import numpy as np
 import os
+from panopticapi.utils import IdGenerator
+import json
+from collections import defaultdict
 
 
 class Constants(Enum):
@@ -39,6 +42,10 @@ class AttentionController(object):
 
         self._image_counter = len(os.listdir("/content/masks"))-1
 
+        self.panoptic_dict = defaultdict(list)
+        self.grounding_dict = defaultdict(list)
+
+        self.annots_idx = 0
 
 
         super().__init__()
@@ -187,7 +194,13 @@ class AttentionController(object):
         self.lbl = lbl
 
 
-    def create_dataset(self, masks, label_folder, image_name:int):
+    def create_dataset(self, masks, label_folder:str, image_name:int):
+
+        cats = {category['id']: category for category in self.cats}
+        generator = IdGenerator(cats)
+
+        label = " ".join(label_folder.strip().split("_"))
+
         mask = masks[self.token_idx, :, :]
         _max_value = torch.max(mask.flatten())
         _min_value = torch.min(mask.flatten())
@@ -199,8 +212,77 @@ class AttentionController(object):
         mask[mask_bg] = 0
         mask[mask_u] = 255
         mask[otherwise] = 0
+
+        _, binary = cv2.threshold(mask.cpu().numpy(), 250, 255, cv2.THRESH_BINARY)
+        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        self.panoptic_dict["images"].append({"file_name": f"{image_name:05}.jpg", "height": 512, "width": 512, "id": int(image_name)})
+        self.grounding_dict["images"].append({"file_name": f"{image_name:05}.jpg", "height": 512, "width": 512, "id": int(image_name)})
+
+        the_annot_of_panoptic_gt = {"segments_info": [], "file_name": f"{image_name:05}.png",
+                                    "image_id": int(image_name)}
+
+        raw_mask = np.zeros((512, 512, 3), dtype=np.uint8)
+
+
+        for contour in contours:
+            segment_info = {}
+
+            polygon_np = np.array(contour, np.int32)
+            poly = polygon_np.reshape((-1, 1, 2))
+
+            x, y, w, h = cv2.boundingRect(polygon_np)
+            bbox = [x, y, w, h]
+            area = cv2.contourArea(poly)
+
+            the_category = list(filter(lambda cat: cat["name"] == label, self.cats))[0]
+
+            # grounding
+            a_grounding = {"segmentation": [contour], "area": int(area), "iscrowd": 0,
+                           "image_id": int(image_name), "category_id": int(the_category["id"]),
+                           "bbox": bbox, "id": int(self.annots_idx), "split": "train", "ann_id": int(self.annots_idx)}
+
+            prompt = label
+            _sentences = list()
+            tokens = prompt.split(' ')
+            raw = sent = prompt
+            _sentences.append({"tokens": tokens, "raw": raw, "sent_id": int(0), "sent": sent})
+            a_grounding.update({"sentences": _sentences})
+            self.grounding_dict["annotations"].append(a_grounding)
+
+            # panoptic
+            _rgb2id, color = generator.get_id_and_color(cat_id=int(the_category["id"]))
+            segment_info["id"] = int(_rgb2id)
+            segment_info["category_id"] = int(the_category["id"])
+            segment_info["iscrowd"] = 0
+            segment_info["bbox"] = bbox
+            segment_info["area"] = int(area)
+
+            the_annot_of_panoptic_gt["segments_info"].append(segment_info)
+            cv2.fillPoly(raw_mask, [contour], color=(int(color[2]), int(color[1]), int(color[0])))
+
+            self.annots_idx += 1
+
         name = f'/content/_dataset/{label_folder}/masks/{image_name:05}.png'
-        cv2.imwrite(name, mask.cpu().numpy().astype(np.uint8))
+        # cv2.imwrite(name, mask.cpu().numpy().astype(np.uint8))
+        self.panoptic_dict["annotations"].append(the_annot_of_panoptic_gt)
+        cv2.imwrite(name, raw_mask)
+
+
+
+    def get_categories_info(self):
+
+        with open("/content/_meta_data/CATEGORIES.json", 'r') as file:
+            cats = json.load(file)
+
+        self.cats = cats
+
+        # self.cats = {category['id']: category for category in cats}
+
+
+
+
+
 
 
         # filtered = masks[self.token_idx, :, :]
@@ -228,5 +310,16 @@ class AttentionController(object):
         #
         #
         #     # cv2.imwrite(name, mask)
+
+    def save_annots(self):
+        panoptic_path = "/content/masks/panoptic.json"
+        with open(panoptic_path, 'w') as file:
+            json.dump(self.panoptic_dict, file)
+
+        grounding_path = "/content/masks/grounding.json"
+        with open(grounding_path, 'w') as file:
+            json.dump(self.panoptic_dict, file)
+
+
 
 

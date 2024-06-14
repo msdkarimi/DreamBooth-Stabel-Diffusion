@@ -332,7 +332,7 @@ def main():
                         #     grid_count += 1
 
                         # toc = time.time()
-
+    sampler.attn_controller.save_annots()
     print(f"Your samples are ready and waiting for you here: \n{outpath} \n"
           f" \nEnjoy.")
 

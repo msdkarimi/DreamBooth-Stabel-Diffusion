@@ -1,0 +1,10 @@
+[{"color": [0, 0, 0], "isthing": 0, "id": 1, "name": "background"},
+{"color": [50, 0, 0], "isthing": 0, "id": 2, "name": "broken pipe"},
+{"color": [0, 50, 0], "isthing": 0, "id": 3, "name": "dark mold"},
+{"color": [0, 0, 50], "isthing": 0, "id": 4, "name": "dark stain"},
+{"color": [100, 0, 0], "isthing": 0, "id": 5, "name": "light mold"},
+{"color": [0, 100, 0], "isthing": 0, "id": 6, "name": "light stain"},
+{"color": [0, 0, 100], "isthing": 0, "id": 7, "name": "liquid spillage"},
+{"color": [150, 0, 0], "isthing": 0, "id": 8, "name": "peeling"},
+{"color": [0, 150, 0], "isthing": 0, "id": 9, "name": "pipe"},
+{"color": [0, 0, 150], "isthing": 0, "id": 10, "name": "raising"}]

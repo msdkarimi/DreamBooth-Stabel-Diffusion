@@ -199,7 +199,8 @@ class AttentionController(object):
         mask[mask_bg] = 0
         mask[mask_u] = 255
         mask[otherwise] = 0
-        cv2.imwrite(f'/content/_dataset/{label_folder}/masks/{image_name:05}.png', mask.cpu().numpy())
+        name = f'/content/_dataset/{label_folder}/masks/{image_name:05}.png'
+        cv2.imwrite(name, mask.cpu().numpy().astype(np.uint8))
 
 
         # filtered = masks[self.token_idx, :, :]

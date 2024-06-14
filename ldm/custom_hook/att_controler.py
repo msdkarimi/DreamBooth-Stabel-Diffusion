@@ -48,6 +48,9 @@ class AttentionController(object):
         self.annots_idx = 0
 
 
+        self.get_categories_info()
+
+
         super().__init__()
 
     def reset_attn_data(self):
@@ -213,7 +216,7 @@ class AttentionController(object):
         mask[mask_u] = 255
         mask[otherwise] = 0
 
-        _, binary = cv2.threshold(mask.cpu().numpy(), 250, 255, cv2.THRESH_BINARY)
+        _, binary = cv2.threshold(mask.cpu().numpy().astype(np.uint8), 250, 255, cv2.THRESH_BINARY)
         contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         self.panoptic_dict["images"].append({"file_name": f"{image_name:05}.jpg", "height": 512, "width": 512, "id": int(image_name)})
@@ -238,7 +241,10 @@ class AttentionController(object):
             the_category = list(filter(lambda cat: cat["name"] == label, self.cats))[0]
 
             # grounding
-            a_grounding = {"segmentation": [contour], "area": int(area), "iscrowd": 0,
+
+            _poly = contour.flatten().tolist()
+
+            a_grounding = {"segmentation": [_poly], "area": int(area), "iscrowd": int(0),
                            "image_id": int(image_name), "category_id": int(the_category["id"]),
                            "bbox": bbox, "id": int(self.annots_idx), "split": "train", "ann_id": int(self.annots_idx)}
 
@@ -318,7 +324,7 @@ class AttentionController(object):
 
         grounding_path = "/content/masks/grounding.json"
         with open(grounding_path, 'w') as file:
-            json.dump(self.panoptic_dict, file)
+            json.dump(self.grounding_dict, file)
 
 
 

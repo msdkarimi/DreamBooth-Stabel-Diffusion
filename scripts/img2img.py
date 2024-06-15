@@ -15,6 +15,7 @@ from contextlib import nullcontext
 import time
 import random
 from pytorch_lightning import seed_everything
+
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(parent_dir)
 from ldm.util import instantiate_from_config
@@ -56,7 +57,7 @@ def load_img(path):
     image = np.array(image).astype(np.float32) / 255.0
     image = image[None].transpose(0, 3, 1, 2)
     image = torch.from_numpy(image)
-    return 2.*image - 1.
+    return 2. * image - 1.
 
 
 def main():
@@ -246,7 +247,7 @@ def main():
 
     dict_of_data = ["broken_pipe", "dark_mold", "dark_stain",
                     "light_mold", "light_stain", "liquid_spillage",
-                    "peeling",  "pipe", "raising"]
+                    "peeling", "pipe", "raising"]
 
     # dict_of_data = {
     #     "broken_pipe": ("a photo of a broken pipe in the wall", 6),
@@ -261,7 +262,6 @@ def main():
     # }
 
     # A photo of a wooden floor, elevated or lifted due to moisture.
-
 
     precision_scope = autocast if opt.precision == "autocast" else nullcontext
     with torch.no_grad():
@@ -278,10 +278,11 @@ def main():
                         # label_folder = label_dirs[random_label_index]
                         #
 
-
-                        list_label_images = os.listdir(f'{_root}/{label_folder}')
+                        list_label_images = [image for image in os.listdir(f'{_root}/{label_folder}') if
+                                             image != '.DS_Store']
                         random_label_image_index = random.randint(0, len(list_label_images) - 1)
-                        the_image_path = f'{_root}/{label_folder}/{list_label_images[random_label_image_index]}'
+                        file_name = list_label_images[random_label_image_index]
+                        the_image_path = f'{_root}/{label_folder}/{file_name}'
 
                         # setting image dir,
                         opt.init_img = the_image_path
@@ -290,8 +291,8 @@ def main():
                         assert os.path.isfile(opt.init_img)
                         init_image = load_img(opt.init_img).to(device)
                         init_image = repeat(init_image, '1 ... -> b ...', b=batch_size)
-                        init_latent = model.get_first_stage_encoding(model.encode_first_stage(init_image))  # move to latent space
-
+                        init_latent = model.get_first_stage_encoding(
+                            model.encode_first_stage(init_image))  # move to latent space
 
                         for n in trange(opt.n_iter, desc="Sampling"):
                             for prompts in tqdm(data, desc="data", disable=True):
@@ -302,15 +303,16 @@ def main():
                                     prompts = list(prompts)
 
                                 # prompts, index_of_token = dict_of_data[label_folder]
-                                
-                                _data = label_folder.strip().split("_")
+
+                                _data = file_name.strip().split("_")
                                 prompts = _data[0]
                                 index_of_token = int(_data[1])
 
                                 c = model.get_learned_conditioning(prompts)
 
                                 # encode (scaled latent)
-                                z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]*batch_size).to(device))
+                                z_enc = sampler.stochastic_encode(init_latent,
+                                                                  torch.tensor([t_enc] * batch_size).to(device))
                                 # decode it
                                 samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=opt.scale,
                                                          unconditional_conditioning=uc,
@@ -325,7 +327,8 @@ def main():
                                         x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
                                         Image.fromarray(x_sample.astype(np.uint8)).save(
                                             # os.path.join(sample_path, f"{base_count:05}.jpg"))
-                                            os.path.join(f'/content/_dataset/{label_folder}/images', f"{base_count:05}.jpg"))
+                                            os.path.join(f'/content/_dataset/{label_folder}/images',
+                                                         f"{base_count:05}.jpg"))
                                         base_count += 1
                                 # all_samples.append(x_samples)
 

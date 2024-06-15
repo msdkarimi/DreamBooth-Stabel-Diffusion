@@ -244,18 +244,23 @@ def main():
     t_enc = int(opt.strength * opt.ddim_steps)
     print(f"target t_enc is {t_enc} steps")
 
-    dict_of_data = {
-        "broken_pipe": ("a photo of a broken pipe in the wall", 6),
-        "dark_mold": ("A photo of a ceiling with dark mold in a bathroom", 8),
-        "dark_stain": ("an image of a ceiling showing a prominent dark stain, suggesting water damage in an aged room", 10),
-        "light_mold": ("A photo of a wall with light mold growth, indicating moisture damages", 8),
-        "light_stain": ("a photo of a white wall shows light stain, indicating water damage caused by moisture", 9),
-        "liquid_spillage": ("A photo of a floor with spilled water", 8),
-        "peeling": ("A photo of a wall with peeling", 7),
-        "pipe": ("A photo of a pipe", 5),
-        "raising": ("a photo of a wall with blister caused by moisture", 7),
-    }
+    dict_of_data = ["broken_pipe", "dark_mold", "dark_stain",
+                    "light_mold", "light_stain", "liquid_spillage",
+                    "peeling",  "pipe", "raising"]
 
+    # dict_of_data = {
+    #     "broken_pipe": ("a photo of a broken pipe in the wall", 6),
+    #     "dark_mold": ("A photo of a ceiling with dark mold in a bathroom", 8),
+    #     "dark_stain": ("an image of a ceiling showing a prominent dark stain, suggesting water damage in an aged room", 10),
+    #     "light_mold": ("A photo of a wall with light mold growth, indicating moisture damages", 8),
+    #     "light_stain": ("a photo of a white wall shows light stain, indicating water damage caused by moisture", 9),
+    #     "liquid_spillage": ("A photo of a floor with spilled water", 8),
+    #     "peeling": ("A photo of a wall with peeling", 7),
+    #     "pipe": ("A photo of a pipe", 5),
+    #     "raising": ("a photo of a wall with blister caused by moisture", 7),
+    # }
+
+    # A photo of a wooden floor, elevated or lifted due to moisture.
 
 
     precision_scope = autocast if opt.precision == "autocast" else nullcontext
@@ -264,7 +269,7 @@ def main():
             with model.ema_scope():
                 tic = time.time()
                 all_samples = list()
-                for _ in range(2):
+                for _ in range(11):
                     for label_folder in dict_of_data:
                         ## we don't want it to be random, otherwise, intra-class imbalance
                         _root = "/content/input_images"
@@ -296,7 +301,11 @@ def main():
                                 if isinstance(prompts, tuple):
                                     prompts = list(prompts)
 
-                                prompts, index_of_token = dict_of_data[label_folder]
+                                # prompts, index_of_token = dict_of_data[label_folder]
+                                
+                                _data = label_folder.strip().split("_")
+                                prompts = _data[0]
+                                index_of_token = int(_data[1])
 
                                 c = model.get_learned_conditioning(prompts)
 

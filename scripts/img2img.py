@@ -269,7 +269,8 @@ def main():
             with model.ema_scope():
                 tic = time.time()
                 all_samples = list()
-                for _ in range(22):
+                for _loop in range(55):
+                    print(f'-------loop-------{_loop}')
                     for label_folder in dict_of_data:
                         ## we don't want it to be random, otherwise, intra-class imbalance
                         _root = "/content/input_images"

@@ -247,7 +247,7 @@ def main():
 
     dict_of_data = ["broken_pipe", "dark_mold", "dark_stain",
                     "light_mold", "light_stain", "liquid_spillage",
-                    "peeling", "pipe", "raising"]
+                    "peeling", "pipe", "raised"]
 
     # dict_of_data = {
     #     "broken_pipe": ("a photo of a broken pipe in the wall", 6),

@@ -227,6 +227,11 @@ class AttentionController(object):
 
         raw_mask = np.zeros((512, 512, 3), dtype=np.uint8)
 
+        # filling the image with background color.
+        color_bg = list(filter(lambda cat: cat["name"] == "background", self.cats))[0]['color']
+        gb_color = (int(color_bg[2]), int(color_bg[1]), int(color_bg[0]))
+        raw_mask[:, :] = gb_color
+
 
         for contour in contours:
             segment_info = {}

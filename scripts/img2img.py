@@ -280,7 +280,8 @@ def main():
                         #
 
                         list_label_images = [image for image in os.listdir(f'{_root}/{label_folder}') if
-                                             image != '.DS_Store']
+                                             image.strip().split(".")[-1] == 'jpg']
+                                             # image != '.DS_Store']
                         random_label_image_index = random.randint(0, len(list_label_images) - 1)
                         file_name = list_label_images[random_label_image_index]
                         the_image_path = f'{_root}/{label_folder}/{file_name}'

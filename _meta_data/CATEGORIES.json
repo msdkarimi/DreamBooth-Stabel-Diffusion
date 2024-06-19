@@ -1,10 +1,12 @@
-[{"color": [0, 0, 0], "isthing": 0, "id": 1, "name": "background"},
-{"color": [50, 0, 0], "isthing": 0, "id": 2, "name": "broken pipe"},
-{"color": [0, 50, 0], "isthing": 0, "id": 3, "name": "dark mold"},
-{"color": [0, 0, 50], "isthing": 0, "id": 4, "name": "dark stain"},
-{"color": [100, 0, 0], "isthing": 0, "id": 5, "name": "light mold"},
-{"color": [0, 100, 0], "isthing": 0, "id": 6, "name": "light stain"},
-{"color": [0, 0, 100], "isthing": 0, "id": 7, "name": "liquid spillage"},
-{"color": [150, 0, 0], "isthing": 0, "id": 8, "name": "peeling"},
-{"color": [0, 150, 0], "isthing": 0, "id": 9, "name": "pipe"},
-{"color": [0, 0, 150], "isthing": 0, "id": 10, "name": "raising"}]
+[
+  {"color": [255, 255, 255], "isthing": 0, "id": 1, "name": "background"},
+  {"color": [240, 230, 0], "isthing": 0, "id": 2, "name": "light mold"},
+  {"color": [90, 90, 0], "isthing": 0, "id": 3, "name": "dark mold"},
+  {"color": [160, 160, 160], "isthing": 0, "id": 4, "name": "light stain"},
+  {"color": [77, 77, 77], "isthing": 0, "id": 5, "name": "dark stain"},
+  {"color": [0 ,100, 255], "isthing": 0, "id": 6, "name": "liquid spillage"},
+  {"color": [200, 0, 200], "isthing": 0, "id": 7, "name": "peeling"},
+  {"color": [0, 255, 150], "isthing": 0, "id": 8, "name": "broken pipe"},
+  {"color": [255, 50, 50], "isthing": 0, "id": 9, "name": "raised"},
+  {"color": [0, 0, 150], "isthing": 0, "id": 10, "name": "pipe"}
+]

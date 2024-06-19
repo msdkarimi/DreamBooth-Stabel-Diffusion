@@ -51,7 +51,7 @@ def load_model_from_config(config, ckpt, verbose=False):
 def load_img(path):
     image = Image.open(path).convert("RGB")
     w, h = image.size
-    print(f"loaded input image of size ({w}, {h}) from {path}")
+    # print(f"loaded input image of size ({w}, {h}) from {path}")
     w, h = map(lambda x: x - x % 32, (w, h))  # resize to integer multiple of 32
     image = image.resize((w, h), resample=PIL.Image.LANCZOS)
     image = np.array(image).astype(np.float32) / 255.0
@@ -269,7 +269,7 @@ def main():
             with model.ema_scope():
                 tic = time.time()
                 all_samples = list()
-                for _loop in range(55):
+                for _loop in range(110):
                     print(f'-------loop-------{_loop}')
                     for label_folder in dict_of_data:
                         ## we don't want it to be random, otherwise, intra-class imbalance

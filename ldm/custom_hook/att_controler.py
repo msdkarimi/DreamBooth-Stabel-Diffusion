@@ -228,13 +228,22 @@ class AttentionController(object):
         raw_mask = np.zeros((512, 512, 3), dtype=np.uint8)
 
         # filling the image with background color.
-        color_bg = list(filter(lambda cat: cat["name"] == "background", self.cats))[0]['color']
+        bg_info = list(filter(lambda cat: cat["name"] == "void", self.cats))[0]
+        _id_gb, color_bg = generator.get_id_and_color(cat_id=int(bg_info["id"]))
         gb_color = (int(color_bg[2]), int(color_bg[1]), int(color_bg[0]))
         raw_mask[:, :] = gb_color
 
 
+
+        background_segment_info = {"id": _id_gb, "category_id": bg_info["id"], "iscrowd": 0, "bbox": [0, 0, 512, 512], "area": 0}
+        the_annot_of_panoptic_gt['segments_info'].append(background_segment_info)
+
+
         for contour in contours:
             segment_info = {}
+
+            if len(np.array(contour).flatten()) <= 7:
+                continue
 
             polygon_np = np.array(contour, np.int32)
             poly = polygon_np.reshape((-1, 1, 2))
@@ -246,7 +255,6 @@ class AttentionController(object):
             the_category = list(filter(lambda cat: cat["name"] == label, self.cats))[0]
 
             # grounding
-
             _poly = contour.flatten().tolist()
 
             a_grounding = {"segmentation": [_poly], "area": int(area), "iscrowd": int(0),
@@ -263,7 +271,7 @@ class AttentionController(object):
 
             # panoptic
             _rgb2id, color = generator.get_id_and_color(cat_id=int(the_category["id"]))
-            segment_info["id"] = int(_rgb2id)
+            segment_info["id"] = _rgb2id
             segment_info["category_id"] = int(the_category["id"])
             segment_info["iscrowd"] = 0
             segment_info["bbox"] = bbox
@@ -289,11 +297,6 @@ class AttentionController(object):
         self.cats = cats
 
         # self.cats = {category['id']: category for category in cats}
-
-
-
-
-
 
 
         # filtered = masks[self.token_idx, :, :]

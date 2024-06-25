@@ -214,6 +214,13 @@ def main():
     os.makedirs(opt.outdir, exist_ok=True)
     outpath = opt.outdir
 
+
+    # directories to save results
+    os.makedirs("results", exist_ok=True)
+    os.makedirs("results/images", exist_ok=True)
+    os.makedirs("results/panoptic", exist_ok=True)
+
+
     batch_size = opt.n_samples
     n_rows = opt.n_rows if opt.n_rows > 0 else batch_size
     if not opt.from_file:
@@ -273,18 +280,21 @@ def main():
                     print(f'-------loop-------{_loop}')
                     for label_folder in dict_of_data:
                         ## we don't want it to be random, otherwise, intra-class imbalance
-                        _root = "/content/input_images"
-                        # label_dirs = os.listdir(_root)
-                        # random_label_index = random.randint(0, len(label_dirs)-1)
-                        # label_folder = label_dirs[random_label_index]
-                        #
+                        # _root = "/content/input_images"
 
-                        list_label_images = [image for image in os.listdir(f'{_root}/{label_folder}') if
+
+
+                        # list_label_images = [image for image in os.listdir(f'{_root}/{label_folder}') if
+                        #                      image.strip().split(".")[-1] == 'jpg']
+
+                        list_label_images = [image for image in os.listdir(os.path.join('input_images', label_folder)) if
                                              image.strip().split(".")[-1] == 'jpg']
-                                             # image != '.DS_Store']
+
+
                         random_label_image_index = random.randint(0, len(list_label_images) - 1)
                         file_name = list_label_images[random_label_image_index]
-                        the_image_path = f'{_root}/{label_folder}/{file_name}'
+                        # the_image_path = f'{_root}/{label_folder}/{file_name}'
+                        the_image_path = os.path.join('input_images', label_folder, file_name)
 
                         # setting image dir,
                         opt.init_img = the_image_path
@@ -328,9 +338,11 @@ def main():
                                     for x_sample in x_samples:
                                         x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
                                         Image.fromarray(x_sample.astype(np.uint8)).save(
-                                            # os.path.join(sample_path, f"{base_count:05}.jpg"))
-                                            os.path.join(f'/content/_dataset/{label_folder}/images',
-                                                         f"{base_count:05}.jpg"))
+                                            # os.path.join(f'/content/_dataset/{label_folder}/images',
+                                            #              f"{base_count:05}.jpg")
+
+                                            os.path.join('results', 'images', f'{base_count:05}.jpg')
+                                        )
                                         base_count += 1
                                 # all_samples.append(x_samples)
 

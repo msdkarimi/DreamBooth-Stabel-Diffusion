@@ -40,7 +40,7 @@ class AttentionController(object):
         self._layers_self = 0
         self._layers_cross = 0
 
-        self._image_counter = len(os.listdir("/content/masks"))-1
+        # self._image_counter = len(os.listdir("/content/masks"))-1
 
         self.panoptic_dict = defaultdict(list)
         self.grounding_dict = defaultdict(list)
@@ -282,16 +282,20 @@ class AttentionController(object):
 
             self.annots_idx += 1
 
-        name = f'/content/_dataset/{label_folder}/masks/{image_name:05}.png'
+        # this one
+        # name = f'/content/_dataset/{label_folder}/masks/{image_name:05}.png'
+
+
         # cv2.imwrite(name, mask.cpu().numpy().astype(np.uint8))
         self.panoptic_dict["annotations"].append(the_annot_of_panoptic_gt)
-        cv2.imwrite(name, raw_mask)
+        cv2.imwrite(os.path.join('results', 'panoptic', f'{image_name:05}.png'), raw_mask)
 
 
 
     def get_categories_info(self):
 
-        with open("/content/_meta_data/CATEGORIES.json", 'r') as file:
+        # with open("/content/_meta_data/CATEGORIES.json", 'r') as file:
+        with open(os.path.join('_meta_data', 'CATEGORIES.json'), 'r') as file:
             cats = json.load(file)
 
         self.cats = cats
@@ -326,11 +330,13 @@ class AttentionController(object):
         #     # cv2.imwrite(name, mask)
 
     def save_annots(self):
-        panoptic_path = "/content/masks/panoptic.json"
+        # panoptic_path = "/content/masks/panoptic.json"
+        panoptic_path = os.path.join('results', 'panoptic.json')
         with open(panoptic_path, 'w') as file:
             json.dump(self.panoptic_dict, file)
 
-        grounding_path = "/content/masks/grounding.json"
+        # grounding_path = "/content/masks/grounding.json"
+        grounding_path = os.path.join('results', 'grounding.json')
         with open(grounding_path, 'w') as file:
             json.dump(self.grounding_dict, file)
 

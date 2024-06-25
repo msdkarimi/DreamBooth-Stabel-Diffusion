@@ -276,7 +276,7 @@ def main():
             with model.ema_scope():
                 tic = time.time()
                 all_samples = list()
-                for _loop in range(110):
+                for _loop in range(700):
                     print(f'-------loop-------{_loop}')
                     for label_folder in dict_of_data:
                         ## we don't want it to be random, otherwise, intra-class imbalance
